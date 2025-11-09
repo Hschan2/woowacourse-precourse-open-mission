@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-1 grid-rows-1 min-h-screen bg-white">
+  <div class="grid grid-cols-1 grid-rows-1 min-h-screen pb-16 bg-white">
     <div class="col-start-1 row-start-1 pt-6 pl-6 place-self-start-start">
       <router-link to="/" class="text-xl font-bold text-neutral-800 cursor-pointer">
         오늘의맛기온
