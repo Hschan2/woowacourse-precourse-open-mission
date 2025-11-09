@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-1 grid-rows-1 min-h-screen bg-white">
+  <div class="grid grid-cols-1 grid-rows-1 min-h-screen pb-16 bg-white">
 
     <div class="col-start-1 row-start-1 pt-6 pl-6 place-self-start-start">
       <router-link to="/" class="text-xl font-bold text-neutral-800 cursor-pointer">
@@ -59,6 +59,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { getWeather } from "../services/weatherAPI";
+import { getAirQualityData } from "../services/airQualityAPI";
 
 const router = useRouter();
 const showPermissionModal = ref(false);
@@ -75,16 +77,61 @@ const handleStartClick = () => {
   }
 };
 
-const requestLocation = () => {
+const requestLocation = async () => {
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
+    async (pos) => {
       console.log("위치 권한 허용됨:", pos.coords);
       userLocation.value = pos.coords;
       showPermissionModal.value = false;
-      router.push({
-        name: 'MoodSelect',
-        query: { lat: pos.coords.latitude, lon: pos.coords.longitude }
-      });
+
+      try {
+        const [weather, airQuality] = await Promise.all([
+          getWeather(pos.coords.latitude, pos.coords.longitude),
+          getAirQualityData(pos.coords.latitude, pos.coords.longitude)
+        ]);
+
+        const query: {
+          lat: number;
+          lon: number;
+          temp?: string;
+          sky?: string;
+          pty?: string;
+          feelsLikeTemp?: string;
+          pm10Value?: string;
+          pm25Value?: string;
+        } = {
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+        };
+
+        if (weather) {
+          query.temp = weather.temp;
+          query.sky = weather.sky;
+          query.pty = weather.pty;
+          query.feelsLikeTemp = weather.feelsLikeTemp;
+        }
+        if (airQuality) {
+          query.pm10Value = airQuality.pm10Value;
+          query.pm25Value = airQuality.pm25Value;
+        }
+
+        console.log("Fetched Weather Data:", weather);
+        console.log("Fetched Air Quality Data:", airQuality);
+        console.log("Navigating with Query:", query);
+
+        router.push({
+          name: 'MoodSelect',
+          query: query
+        });
+
+      } catch (error) {
+        console.error("데이터 가져오기 실패:", error);
+        // 데이터 가져오기에 실패해도 위치 정보만으로 이동
+        router.push({
+          name: 'MoodSelect',
+          query: { lat: pos.coords.latitude, lon: pos.coords.longitude }
+        });
+      }
     },
     (err) => {
       console.error("위치 권한 거부:", err);
