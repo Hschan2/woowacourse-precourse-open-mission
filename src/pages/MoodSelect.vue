@@ -53,9 +53,9 @@
         <button
           @click="handleNextClick"
           class="px-8 py-2 bg-blue-600 text-white font-bold rounded-full text-lg hover:bg-blue-700 transition cursor-pointer disabled:bg-gray-400"
-          :disabled="selectedMoods.length === 0"
+          :disabled="selectedMoods.length === 0 || isSubmitting"
         >
-          다음
+          {{ isSubmitting ? '추천받는 중...' : '다음' }}
         </button>
       </div>
     </div>
@@ -75,6 +75,7 @@ const selectedMoods = ref<string[]>([]);
 const weatherData = ref<any>(null);
 const airQualityData = ref<any>(null);
 const isLoading = ref(true);
+const isSubmitting = ref(false); // AI 요청 중 로딩 상태
 
 onMounted(async () => {
   const lat = parseFloat(route.query.lat as string);
@@ -127,11 +128,13 @@ const toggleMood = (mood: string) => {
   }
 };
 
-const handleNextClick = () => {
+const handleNextClick = async () => { // async 키워드 추가
   if (selectedMoods.value.length === 0) {
     alert("기분을 1개 이상 선택해주세요.");
     return;
   }
+
+  isSubmitting.value = true; // 요청 시작 시 로딩 상태 활성화
 
   // 날씨 정보 가공
   const weatherText = weatherData.value
@@ -156,9 +159,30 @@ const handleNextClick = () => {
   `;
 
   console.log("AI에게 보낼 프롬프트:", promptToAI);
-  alert("음식 추천을 요청했습니다! (콘솔에서 프롬프트 확인)");
 
-  // TODO: AI API 호출 및 결과 페이지로 이동하는 로직 추가
+  try {
+    const response = await fetch("http://localhost:8000/api/recommend-food", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt: promptToAI }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("AI 추천 응답:", data.recommendation);
+    alert(`AI 추천: ${data.recommendation}`);
+    // TODO: 추천 결과를 보여주는 페이지로 이동하는 로직 추가
+  } catch (error) {
+    console.error("AI 서버 요청 실패:", error);
+    alert("AI 서버에 요청하는 데 실패했습니다. 서버가 실행 중인지 확인해주세요.");
+  } finally {
+    isSubmitting.value = false; // 요청 완료 시 로딩 상태 비활성화
+  }
 };
 
 const moods = [
