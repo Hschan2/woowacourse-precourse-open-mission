@@ -68,7 +68,7 @@ interface KMAApiItem {
  * @param windSpeed 풍속 m/s
  * @returns {string} 계산된 체감온도
  */
-const calculateFeelsLikeTemp = (temp: number, windSpeed: number): string => {
+const calculateFeelsLikeTemp = (temp: number, windSpeed: number | undefined): string => {
   if (windSpeed === undefined) return temp.toFixed(1);
   const windSpeedKmh = windSpeed * 3.6;
   if (windSpeedKmh <= 4.8) {
@@ -177,9 +177,13 @@ export const getWeather = async (
     }
 
     // 체감온도 계산
-    const tempNum = parseFloat(weather.temp);
-    const windSpeedNum = parseFloat(weather.windSpeed);
-    weather.feelsLikeTemp = calculateFeelsLikeTemp(tempNum, windSpeedNum);
+    if (weather.temp) {
+      const tempNum = parseFloat(weather.temp);
+      const windSpeedNum = weather.windSpeed
+        ? parseFloat(weather.windSpeed)
+        : undefined;
+      weather.feelsLikeTemp = calculateFeelsLikeTemp(tempNum, windSpeedNum);
+    }
 
     return weather as WeatherData;
   } catch (error) {
