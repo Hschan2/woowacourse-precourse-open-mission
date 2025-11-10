@@ -116,3 +116,25 @@ export const getAirQualityData = async (
     return null;
   }
 };
+
+/**
+ * PM10 수치를 기반으로 미세먼지 등급을 반환하는 함수
+ * @param pm10Value PM10 수치 (μg/m³)
+ * @returns {string} 미세먼지 등급 (좋음, 보통, 나쁨, 매우 나쁨)
+ */
+export const getPm10Grade = (pm10Value: string): string => {
+  const value = parseInt(pm10Value, 10);
+  if (isNaN(value)) {
+    return "알 수 없음";
+  }
+
+  if (value <= 30) {
+    return "좋음";
+  } else if (value <= 80) {
+    return "보통";
+  } else if (value <= 150) {
+    return "나쁨";
+  } else {
+    return "매우 나쁨";
+  }
+};
