@@ -187,3 +187,44 @@ export const getWeather = async (
     return null;
   }
 };
+
+/**
+ * PTY(강수형태), SKY(하늘상태) 코드에 따라 날씨 상태를 한글로 변환하는 함수
+ * @param pty PTY 코드
+ * @param sky SKY 코드
+ * @returns {string} 날씨 상태 (e.g., "맑음", "비", "눈")
+ */
+export const getWeatherCondition = (pty: string, sky: string): string => {
+  const ptyValue = parseInt(pty, 10);
+  if (ptyValue > 0) {
+    switch (ptyValue) {
+      case 1:
+        return "비";
+      case 2:
+        return "비/눈";
+      case 3:
+        return "눈";
+      case 5:
+        return "빗방울";
+      case 6:
+        return "빗방울/눈날림";
+      case 7:
+        return "눈날림";
+      default:
+        return "알 수 없음";
+    }
+  }
+
+  const skyValue = parseInt(sky, 10);
+  switch (skyValue) {
+    case 1:
+      return "맑음";
+    case 3:
+      return "구름많음";
+    case 4:
+      return "흐림";
+    default:
+      return "알 수 없음";
+  }
+};
+
