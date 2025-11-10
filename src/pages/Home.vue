@@ -1,13 +1,17 @@
 <template>
   <div class="grid grid-cols-1 grid-rows-1 min-h-screen pb-16 bg-white">
-
     <div class="col-start-1 row-start-1 pt-6 pl-6 place-self-start-start">
-      <router-link to="/" class="text-xl font-bold text-neutral-800 cursor-pointer">
+      <router-link
+        to="/"
+        class="text-xl font-bold text-neutral-800 cursor-pointer"
+      >
         오늘의맛기온
       </router-link>
     </div>
 
-    <div class="col-start-1 row-start-1 pt-6 pr-6 align-self-start justify-self-end">
+    <div
+      class="col-start-1 row-start-1 pt-6 pr-6 align-self-start justify-self-end"
+    >
       <button
         class="px-4 py-1.5 bg-[#777] text-white text-sm rounded-lg hover:bg-[#666] transition cursor-pointer"
       >
@@ -27,10 +31,7 @@
       </button>
     </div>
 
-    <div
-      v-if="showPermissionModal"
-      class="col-start-1 row-start-1 z-10"
-    >
+    <div v-if="showPermissionModal" class="col-start-1 row-start-1 z-10">
       <div
         class="absolute top-6 left-1/2 -translate-x-1/2 w-[360px] rounded-xl p-6 shadow-lg bg-white text-center border border-gray-300"
       >
@@ -59,83 +60,37 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { getWeather } from "../services/weatherAPI";
-import { getAirQualityData } from "../services/airQualityAPI";
 
 const router = useRouter();
 const showPermissionModal = ref(false);
-const userLocation = ref(null);
 
 const handleStartClick = () => {
-  if (userLocation.value) {
-    router.push({
-      name: 'MoodSelect',
-      query: { lat: userLocation.value.latitude, lon: userLocation.value.longitude }
-    });
-  } else {
-    showPermissionModal.value = true;
-  }
+  showPermissionModal.value = true;
 };
 
-const requestLocation = async () => {
+const requestLocation = () => {
   navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      console.log("위치 권한 허용됨:", pos.coords);
-      userLocation.value = pos.coords;
+    (pos) => {
+      console.log(
+        "위치 권한 허용됨. MoodSelect 페이지로 이동합니다:",
+        pos.coords
+      );
       showPermissionModal.value = false;
 
-      try {
-        const [weather, airQuality] = await Promise.all([
-          getWeather(pos.coords.latitude, pos.coords.longitude),
-          getAirQualityData(pos.coords.latitude, pos.coords.longitude)
-        ]);
-
-        const query: {
-          lat: number;
-          lon: number;
-          temp?: string;
-          sky?: string;
-          pty?: string;
-          feelsLikeTemp?: string;
-          pm10Value?: string;
-          pm25Value?: string;
-        } = {
+      router.push({
+        name: "MoodSelect",
+        query: {
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
-        };
-
-        if (weather) {
-          query.temp = weather.temp;
-          query.sky = weather.sky;
-          query.pty = weather.pty;
-          query.feelsLikeTemp = weather.feelsLikeTemp;
-        }
-        if (airQuality) {
-          query.pm10Value = airQuality.pm10Value;
-          query.pm25Value = airQuality.pm25Value;
-        }
-
-        console.log("Fetched Weather Data:", weather);
-        console.log("Fetched Air Quality Data:", airQuality);
-        console.log("Navigating with Query:", query);
-
-        router.push({
-          name: 'MoodSelect',
-          query: query
-        });
-
-      } catch (error) {
-        console.error("데이터 가져오기 실패:", error);
-        // 데이터 가져오기에 실패해도 위치 정보만으로 이동
-        router.push({
-          name: 'MoodSelect',
-          query: { lat: pos.coords.latitude, lon: pos.coords.longitude }
-        });
-      }
+        },
+      });
     },
     (err) => {
       console.error("위치 권한 거부:", err);
       showPermissionModal.value = false;
+      alert(
+        "위치 권한이 거부되었습니다. 서비스 이용을 위해 위치 권한을 허용해주세요."
+      );
     }
   );
 };
