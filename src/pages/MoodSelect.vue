@@ -1,6 +1,5 @@
 <template>
   <div class="grid grid-cols-1 grid-rows-1 min-h-screen pb-16 bg-white">
-    <!-- Header -->
     <div class="col-start-1 row-start-1 pt-6 pl-6 place-self-start-start">
       <router-link
         to="/"
@@ -19,20 +18,14 @@
       </button>
     </div>
 
-    <!-- Main Content -->
     <div class="col-start-1 row-start-1 place-self-center w-full">
-      <!-- 1. 로딩 중 화면 -->
-      <div
-        v-if="isSubmitting"
-        class="flex flex-col items-center text-center"
-      >
+      <div v-if="isSubmitting" class="flex flex-col items-center text-center">
         <img src="/mat.svg" alt="로딩 중" class="w-24 h-24 animate-bounce" />
         <p class="mt-4 text-lg font-bold text-gray-700">
           AI가 음식을 추천하고 있어요...
         </p>
       </div>
 
-      <!-- 2. AI 추천 결과 화면 -->
       <div
         v-else-if="recommendationResult"
         class="flex flex-col items-center text-center px-4"
@@ -48,7 +41,10 @@
           <p class="text-lg font-medium text-gray-800 mb-4">
             "{{ recommendationResult.reason }}"
           </p>
-          <div class="grid grid-cols-2 gap-4 text-left">
+
+          <div
+            class="grid grid-cols-2 gap-x-4 gap-y-2 text-left mt-4 pt-4 border-t border-gray-200"
+          >
             <div class="font-semibold text-gray-600">평균 가격:</div>
             <div class="text-gray-800">
               {{ Number(recommendationResult.averagePrice).toLocaleString() }}원
@@ -58,7 +54,24 @@
               {{ Number(recommendationResult.calories).toLocaleString() }} kcal
             </div>
           </div>
+
+          <div class="space-y-3 text-left mt-6 pt-6 border-t border-gray-200">
+            <h3 class="font-bold text-gray-700 pb-2">📍 추천 맛집 목록</h3>
+            <div
+              v-for="restaurant in recommendationResult.restaurants"
+              :key="restaurant.name"
+              class="border-b border-gray-100 py-2 last:border-b-0"
+            >
+              <p class="font-semibold text-gray-800">{{ restaurant.name }}</p>
+              <p class="text-sm text-gray-600">{{ restaurant.address }}</p>
+            </div>
+          </div>
         </div>
+
+        <p class="text-xs text-gray-500 mt-4 max-w-md">
+          ※ 무료 AI 모델을 사용하여 추천된 정보(맛집 목록, 주소 등)는 실제와
+          다를 수 있습니다.
+        </p>
 
         <button
           @click="resetRecommendation"
@@ -68,7 +81,6 @@
         </button>
       </div>
 
-      <!-- 3. 기분 선택 화면 -->
       <div v-else class="flex flex-col items-center w-full">
         <h1 class="text-2xl font-bold mt-16 mb-10">
           지금 당신의 기분이 어떤가요?
@@ -116,12 +128,19 @@ import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getWeather, getWeatherCondition } from "../services/weatherAPI";
 import { getAirQualityData, getPm10Grade } from "../services/airQualityAPI";
+import { getAddressFromCoords } from "../services/locationAPI";
+
+interface Restaurant {
+  name: string;
+  address: string;
+}
 
 interface Recommendation {
   foodName: string;
   reason: string;
   averagePrice: number;
   calories: number;
+  restaurants: Restaurant[];
 }
 
 const route = useRoute();
@@ -130,6 +149,7 @@ const router = useRouter();
 const selectedMoods = ref<string[]>([]);
 const weatherData = ref<any>(null);
 const airQualityData = ref<any>(null);
+const locationAddress = ref<string>(""); // 현재 위치 주소
 const isLoading = ref(true);
 const isSubmitting = ref(false);
 const recommendationResult = ref<Recommendation | null>(null);
@@ -146,12 +166,14 @@ onMounted(async () => {
 
   try {
     isLoading.value = true;
-    const [weatherResult, airQualityResult] = await Promise.all([
+    const [weatherResult, airQualityResult, addressResult] = await Promise.all([
       getWeather(lat, lon),
       getAirQualityData(lat, lon),
+      getAddressFromCoords(lat, lon),
     ]);
     weatherData.value = weatherResult;
     airQualityData.value = airQualityResult;
+    locationAddress.value = addressResult;
   } catch (error) {
     console.error("데이터를 가져오는 데 실패했습니다:", error);
     alert("데이터를 가져오는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
@@ -187,10 +209,20 @@ const handleNextClick = async () => {
     : "알 수 없음";
   const moodText = selectedMoods.value.join(", ");
 
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+  const timeOfDay = currentHour < 12 ? "오전" : "오후";
+  const formattedTime = `${timeOfDay} ${
+    currentHour % 12 || 12
+  }시 ${currentMinute}분`;
+
   const promptToAI = `
+    내 현재 위치는 '${locationAddress.value}' 근처야.
+    현재 시간은 ${formattedTime}이고,
     오늘 날씨는 ${weatherText}, 기온은 ${temperature}도인데 체감 온도는 ${feelsLikeTemp}도야.
     미세먼지 수준은 '${pm10Grade}'이고, 내 기분은 '${moodText}'인데,
-    이런 날씨와 기분에 딱 맞는 음식을 추천해줘.
+    이런 날씨와 기분에 딱 맞는 음식을 추천해주고, 내 현재 위치 근처의 맛집 3곳도 함께 알려줘.
   `;
 
   try {
@@ -210,7 +242,7 @@ const handleNextClick = async () => {
     if (data.error) {
       throw new Error(data.error);
     }
-    
+
     recommendationResult.value = data;
   } catch (error) {
     console.error("AI 서버 요청 실패:", error);
@@ -227,14 +259,46 @@ const resetRecommendation = () => {
 };
 
 const moods = [
-  "😊 행복해요", "😄 즐거워요", "😆 유쾌해요", "😀 만족해요", "🥳 신나요",
-  "😌 편안해요", "✨ 성취해요", "💪 활기차요", "👍 자신해요", "😍 감동해요",
-  "💖 설레요", "🔥 따뜻해요", "🚀 의기양양해요", "😢 슬퍼요", "😔 우울해요",
-  "😭 비통해요", "😩 절망해요", "😥 후회해요", "😞 실망해요", "😔 억울해요",
-  "🤬 격노해요", "😡 짜증나요", "😠 화나요", "😨 불안해요", "😭 비참해요",
-  "🤕 상처있어요", "😵 무기력해요", "😟 걱정해요", "😬 초조해요", "😨 무서워요",
-  "😬 긴장해요", "😰 조마해요", "🤢 싫어요", "😱 두려워요", "😖 괴로워요",
-  "📉 나약해요", "🤦 한심해요", "🤢 불쾌해요", "😫 피로해요", "😥 부담있어요",
+  "😊 행복해요",
+  "😄 즐거워요",
+  "😆 유쾌해요",
+  "😀 만족해요",
+  "🥳 신나요",
+  "😌 편안해요",
+  "✨ 성취해요",
+  "💪 활기차요",
+  "👍 자신해요",
+  "😍 감동해요",
+  "💖 설레요",
+  "🔥 따뜻해요",
+  "🚀 의기양양해요",
+  "😢 슬퍼요",
+  "😔 우울해요",
+  "😭 비통해요",
+  "😩 절망해요",
+  "😥 후회해요",
+  "😞 실망해요",
+  "😔 억울해요",
+  "🤬 격노해요",
+  "😡 짜증나요",
+  "😠 화나요",
+  "😨 불안해요",
+  "😭 비참해요",
+  "🤕 상처있어요",
+  "😵 무기력해요",
+  "😟 걱정해요",
+  "😬 초조해요",
+  "😨 무서워요",
+  "😬 긴장해요",
+  "😰 조마해요",
+  "🤢 싫어요",
+  "😱 두려워요",
+  "😖 괴로워요",
+  "📉 나약해요",
+  "🤦 한심해요",
+  "🤢 불쾌해요",
+  "😫 피로해요",
+  "😥 부담있어요",
   "😳 부끄러워요",
 ];
 </script>
