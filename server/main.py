@@ -73,6 +73,137 @@ def parse_key_value_response(text_response: str) -> dict:
             data[key.strip()] = value.strip()
     return data
 
+import urllib.parse
+import math
+from datetime import datetime, timedelta
+
+# ======================================================================================
+# 기상청 격자 변환 로직 (From JavaScript to Python)
+# ======================================================================================
+RE = 6371.00877
+GRID = 5.0
+SLAT1 = 30.0
+SLAT2 = 60.0
+OLON = 126.0
+OLAT = 38.0
+XO = 43
+YO = 136
+
+def convert_to_grid(lat, lon):
+    DEGRAD = math.pi / 180.0
+    
+    re = RE / GRID
+    slat1 = SLAT1 * DEGRAD
+    slat2 = SLAT2 * DEGRAD
+    olon = OLON * DEGRAD
+    olat = OLAT * DEGRAD
+
+    sn = math.tan(math.pi * 0.25 + slat2 * 0.5) / math.tan(math.pi * 0.25 + slat1 * 0.5)
+    sn = math.log(math.cos(slat1) / math.cos(slat2)) / math.log(sn)
+    
+    sf = math.tan(math.pi * 0.25 + slat1 * 0.5)
+    sf = (math.pow(sf, sn) * math.cos(slat1)) / sn
+    
+    ro = math.tan(math.pi * 0.25 + olat * 0.5)
+    ro = (re * sf) / math.pow(ro, sn)
+    
+    ra = math.tan(math.pi * 0.25 + lat * DEGRAD * 0.5)
+    ra = (re * sf) / math.pow(ra, sn)
+    
+    theta = lon * DEGRAD - olon
+    if theta > math.pi:
+        theta -= 2.0 * math.pi
+    if theta < -math.pi:
+        theta += 2.0 * math.pi
+    theta *= sn
+    
+    x = math.floor(ra * math.sin(theta) + XO + 0.5)
+    y = math.floor(ro - ra * math.cos(theta) + YO + 0.5)
+    
+    return x, y
+
+@app.get("/api/weather")
+async def get_weather_proxy(lat: float, lon: float):
+    kma_api_key = os.getenv("KMA_API_KEY")
+    if not kma_api_key:
+        return {"error": "기상청 API 키가 설정되지 않았습니다."}
+
+    # URL 인코딩된 API 키
+    encoded_api_key = urllib.parse.quote(kma_api_key)
+
+    grid_x, grid_y = convert_to_grid(lat, lon)
+    
+    now = datetime.now()
+    base_date = now.strftime('%Y%m%d')
+    
+    # 기상청 API는 특정 시간에만 데이터를 제공 (2, 5, 8, 11, 14, 17, 20, 23시)
+    available_hours = [2, 5, 8, 11, 14, 17, 20, 23]
+    current_hour = now.hour
+    
+    base_hour = None
+    for h in reversed(available_hours):
+        if h <= current_hour:
+            base_hour = h
+            break
+            
+    if base_hour is None:
+        # 자정~새벽 2시 사이에는 전날 23시 데이터 사용
+        yesterday = now - timedelta(days=1)
+        base_date = yesterday.strftime('%Y%m%d')
+        base_hour = 23
+
+    base_time = f"{base_hour:02d}00"
+
+    url = (
+        "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst"
+        f"?serviceKey={encoded_api_key}"
+        "&pageNo=1&numOfRows=200&dataType=JSON"
+        f"&base_date={base_date}&base_time={base_time}"
+        f"&nx={grid_x}&ny={grid_y}"
+    )
+
+    print(f"Requesting KMA URL: {url}")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, timeout=20.0)
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            print(f"기상청 API 요청 실패: {e.response.status_code} - {e.response.text}")
+            return {"error": "기상청 API 요청 중 오류가 발생했습니다."}
+        except Exception as e:
+            # 더 자세한 에러 로깅
+            print(f"날씨 정보 조회 중 오류 발생: {type(e).__name__} - {e}")
+            print(f"Exception repr: {repr(e)}")
+            return {"error": "서버에서 날씨 정보 조회 중 오류가 발생했습니다."}
+
+
+@app.get("/api/reverse-geocode")
+async def reverse_geocode(lat: float, lon: float):
+    vworld_api_key = os.getenv("VWORLD_API_KEY")
+    if not vworld_api_key:
+        return {"error": "VWorld API 키가 설정되지 않았습니다."}
+
+    url = f"https://api.vworld.kr/req/address?service=address&request=getaddress&version=2.0&crs=epsg:4326&point={lon},{lat}&format=json&type=both&zipcode=true&simple=false&key={vworld_api_key}"
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url)
+            response.raise_for_status()
+            data = response.json()
+            if data.get("response", {}).get("status") == "OK" and data["response"]["result"]:
+                return {"address": data["response"]["result"][0]["text"]}
+            else:
+                return {"error": "주소를 찾을 수 없습니다."}
+        except httpx.HTTPStatusError as e:
+            print(f"VWorld API 요청 실패: {e}")
+            return {"error": "VWorld API 요청 중 오류가 발생했습니다."}
+        except Exception as e:
+            print(f"리버스 지오코딩 중 오류 발생: {e}")
+            return {"error": "서버에서 주소 변환 중 오류가 발생했습니다."}
+
+
 @app.post("/api/recommend-food")
 async def recommend_food(request: RecommendationRequest):
     api_key = os.getenv("OPENROUTER_API_KEY")
