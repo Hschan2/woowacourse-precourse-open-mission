@@ -1,49 +1,3 @@
-const RE = 6371.00877;
-const GRID = 5.0;
-const SLAT1 = 30.0;
-const SLAT2 = 60.0;
-const OLON = 126.0;
-const OLAT = 38.0;
-const XO = 43;
-const YO = 136;
-
-/**
- * 위도, 경도를 기상청 격자 좌표로 변환하는 함수
- * @param lat 위도
- * @param lon 경도
- * @returns {{x: number, y: number}} X, Y 좌표
- */
-const convertToGrid = (lat: number, lon: number) => {
-  const DEGRAD = Math.PI / 180.0;
-
-  const re = RE / GRID;
-  const slat1 = SLAT1 * DEGRAD;
-  const slat2 = SLAT2 * DEGRAD;
-  const olon = OLON * DEGRAD;
-  const olat = OLAT * DEGRAD;
-
-  let sn =
-    Math.tan(Math.PI * 0.25 + slat2 * 0.5) /
-    Math.tan(Math.PI * 0.25 + slat1 * 0.5);
-  sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
-  let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);
-  sf = (Math.pow(sf, sn) * Math.cos(slat1)) / sn;
-  let ro = Math.tan(Math.PI * 0.25 + olat * 0.5);
-  ro = (re * sf) / Math.pow(ro, sn);
-
-  let ra = Math.tan(Math.PI * 0.25 + lat * DEGRAD * 0.5);
-  ra = (re * sf) / Math.pow(ra, sn);
-  let theta = lon * DEGRAD - olon;
-  if (theta > Math.PI) theta -= 2.0 * Math.PI;
-  if (theta < -Math.PI) theta += 2.0 * Math.PI;
-  theta *= sn;
-
-  const x = Math.floor(ra * Math.sin(theta) + XO + 0.5);
-  const y = Math.floor(ro - ra * Math.cos(theta) + YO + 0.5);
-
-  return { x, y };
-};
-
 interface WeatherData {
   temp: string;
   sky: string;
@@ -83,7 +37,7 @@ const calculateFeelsLikeTemp = (temp: number, windSpeed: number | undefined): st
 };
 
 /**
- * 기상청 단기예보 API를 호출하여 날씨 정보를 가져오는 함수
+ * 백엔드 프록시를 통해 기상청 단기예보 API를 호출하여 날씨 정보를 가져오는 함수
  * @param lat 위도
  * @param lon 경도
  * @returns {Promise<WeatherData | null>} 날씨 데이터 또는 실패 시 null
@@ -92,43 +46,7 @@ export const getWeather = async (
   lat: number,
   lon: number
 ): Promise<WeatherData | null> => {
-  const grid = convertToGrid(lat, lon);
-  const API_KEY = import.meta.env.VITE_KMA_API_KEY;
-  const BASE_URL =
-    "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
-
-  const now = new Date();
-  let base_date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}${String(now.getDate()).padStart(2, "0")}`;
-
-  // 안정적인 데이터 수신을 위해 현재 시간에서 몇 시간 전의 데이터를 요청
-  const availableHours = [2, 5, 8, 11, 14, 17, 20, 23];
-  let currentHour = now.getHours();
-  let base_hour = availableHours
-    .slice()
-    .reverse()
-    .find((h) => h <= currentHour);
-
-  // 자정~새벽 2시 사이에는 전날 23시 데이터 사용
-  if (base_hour === undefined) {
-    now.setDate(now.getDate() - 1);
-    base_date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}${String(now.getDate()).padStart(2, "0")}`;
-    base_hour = 23;
-  }
-
-  const base_time = `${String(base_hour).padStart(2, "0")}00`;
-  const fcst_time = `${String(currentHour).padStart(2, "0")}00`;
-
-  const url = `${BASE_URL}?serviceKey=${encodeURIComponent(
-    API_KEY
-  )}&pageNo=1&numOfRows=200&dataType=JSON&base_date=${base_date}&base_time=${base_time}&nx=${
-    grid.x
-  }&ny=${grid.y}`;
+  const url = `http://localhost:8000/api/weather?lat=${lat}&lon=${lon}`;
 
   try {
     const response = await fetch(url);
@@ -138,7 +56,7 @@ export const getWeather = async (
     const data = await response.json();
 
     if (data.response?.header?.resultCode !== "00") {
-      console.error("API Error:", data.response?.header?.resultMsg);
+      console.error("API Error:", data.response?.header?.resultMsg || data.error);
       return null;
     }
 
@@ -147,9 +65,22 @@ export const getWeather = async (
       WeatherData & { windSpeed?: string; humidity?: string }
     > = {};
 
+    const now = new Date();
+    const base_date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}${String(now.getDate()).padStart(2, "0")}`;
+    const fcst_time = `${String(now.getHours()).padStart(2, "0")}00`;
+
     const targetItems = items.filter(
       (item) => item.fcstDate === base_date && item.fcstTime === fcst_time
     );
+
+    // 현재 시간에 맞는 예보가 없으면 가장 가까운 시간의 예보를 찾음
+    if (targetItems.length === 0 && items.length > 0) {
+        const closestTime = items[0].fcstTime;
+        items.filter(item => item.fcstTime === closestTime).forEach(item => targetItems.push(item));
+    }
 
     targetItems.forEach((item: KMAApiItem) => {
       switch (item.category) {
