@@ -2,32 +2,22 @@ export const getAddressFromCoords = async (
   lat: number,
   lon: number
 ): Promise<string> => {
-  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=ko`;
+  // 백엔드 프록시 서버를 통해 VWorld API에 요청합니다.
+  const url = `http://localhost:8000/api/reverse-geocode?lat=${lat}&lon=${lon}`;
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "woowacourse-precourse-open-mission/1.0",
-      },
-    });
+    const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error(`Nominatim API error! status: ${response.status}`);
+      throw new Error(`Reverse geocode proxy error! status: ${response.status}`);
     }
 
     const data = await response.json();
 
-    if (data && data.address) {
-      const { state, city, county, suburb, neighbourhood, road } = data.address;
-      const addressParts = [
-        state,
-        city || county,
-        suburb || neighbourhood || road,
-      ].filter((part) => part);
-
-      return addressParts.join(" ");
+    if (data.address) {
+      return data.address;
     } else {
-      console.error("주소 변환 실패: 유효한 주소 정보 없음", data);
+      console.error("주소 변환 실패:", data.error || "알 수 없는 오류");
       return "알 수 없는 위치";
     }
   } catch (error) {
