@@ -1,3 +1,4 @@
+import { AIR_QUALITY_GRADES } from "/src/constants/messages";
 import proj4 from "proj4";
 
 // WGS84 좌표계(위도, 경도) 정의
@@ -125,16 +126,16 @@ export const getAirQualityData = async (
 export const getPm10Grade = (pm10Value: string): string => {
   const value = parseInt(pm10Value, 10);
   if (isNaN(value)) {
-    return "알 수 없음";
+    return AIR_QUALITY_GRADES.UNKNOWN;
   }
-
   if (value <= 30) {
-    return "좋음";
-  } else if (value <= 80) {
-    return "보통";
-  } else if (value <= 150) {
-    return "나쁨";
-  } else {
-    return "매우 나쁨";
+    return AIR_QUALITY_GRADES.GOOD;
   }
+  if (value <= 80) {
+    return AIR_QUALITY_GRADES.NORMAL;
+  }
+  if (value <= 150) {
+    return AIR_QUALITY_GRADES.BAD;
+  }
+  return AIR_QUALITY_GRADES.VERY_BAD;
 };
