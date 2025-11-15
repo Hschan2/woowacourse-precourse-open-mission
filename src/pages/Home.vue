@@ -5,7 +5,7 @@
         to="/"
         class="text-xl font-bold text-neutral-800 cursor-pointer"
       >
-        오늘의맛기온
+        {{ UI_MESSAGES.APP_TITLE }}
       </router-link>
     </div>
 
@@ -15,19 +15,19 @@
       <button
         class="px-4 py-1.5 bg-[#777] text-white text-sm rounded-lg hover:bg-[#666] transition cursor-pointer"
       >
-        미니게임
+        {{ UI_MESSAGES.MINI_GAME }}
       </button>
     </div>
 
     <div
       class="col-start-1 row-start-1 place-self-center flex flex-col items-center mt-[-4rem]"
     >
-      <img src="../assets/logo.png" alt="오늘의 맛기온" class="h-32 mx-auto" />
+      <img :src="logo" :alt="UI_MESSAGES.LOGO_ALT" class="h-32 mx-auto" />
       <button
         @click="handleStartClick"
         class="mt-10 px-8 py-2 bg-blue-600 text-white font-bold rounded-full text-lg hover:bg-blue-700 transition cursor-pointer"
       >
-        시작
+        {{ UI_MESSAGES.START }}
       </button>
     </div>
 
@@ -36,20 +36,20 @@
         class="absolute top-6 left-1/2 -translate-x-1/2 w-[360px] rounded-xl p-6 shadow-lg bg-white text-center border border-gray-300"
       >
         <p class="text-gray-800 text-sm mb-6">
-          오늘의 맛기온에서 사용자의 위치 권한을 요청합니다.
+          {{ UI_MESSAGES.REQUEST_LOCATION_PERMISSION }}
         </p>
         <div class="flex justify-center space-x-3">
           <button
             class="bg-gray-200 text-gray-700 px-5 py-2 rounded-full font-medium hover:bg-gray-300 transition cursor-pointer"
             @click="showPermissionModal = false"
           >
-            취소
+            {{ UI_MESSAGES.CANCEL }}
           </button>
           <button
             class="bg-blue-600 text-white px-5 py-2 rounded-full font-medium hover:bg-blue-700 transition cursor-pointer"
-            @click="requestLocation"
+            @click="handleAllowClick"
           >
-            허용
+            {{ UI_MESSAGES.ALLOW }}
           </button>
         </div>
       </div>
@@ -59,39 +59,19 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { UI_MESSAGES } from "/src/constants/messages";
+import { useLocation } from "/src/composables/useLocation";
+import logo from "/src/assets/logo.png";
 
-const router = useRouter();
 const showPermissionModal = ref(false);
+const { requestLocation } = useLocation();
 
 const handleStartClick = () => {
   showPermissionModal.value = true;
 };
 
-const requestLocation = () => {
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      console.log(
-        "위치 권한 허용됨. MoodSelect 페이지로 이동합니다:",
-        pos.coords
-      );
-      showPermissionModal.value = false;
-
-      router.push({
-        name: "MoodSelect",
-        query: {
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-        },
-      });
-    },
-    (err) => {
-      console.error("위치 권한 거부:", err);
-      showPermissionModal.value = false;
-      alert(
-        "위치 권한이 거부되었습니다. 서비스 이용을 위해 위치 권한을 허용해주세요."
-      );
-    }
-  );
+const handleAllowClick = () => {
+  showPermissionModal.value = false;
+  requestLocation();
 };
 </script>
