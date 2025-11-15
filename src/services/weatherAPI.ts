@@ -16,13 +16,43 @@ interface KMAApiItem {
   ny: number;
 }
 
+const parseWeatherItems = (
+  items: KMAApiItem[]
+): Partial<WeatherData & { windSpeed?: string; humidity?: string }> => {
+  const weather: Partial<WeatherData & { windSpeed?: string; humidity?: string }> =
+    {};
+  items.forEach((item: KMAApiItem) => {
+    switch (item.category) {
+      case "TMP":
+        weather.temp = item.fcstValue;
+        break;
+      case "SKY":
+        weather.sky = item.fcstValue;
+        break;
+      case "PTY":
+        weather.pty = item.fcstValue;
+        break;
+      case "WSD":
+        weather.windSpeed = item.fcstValue;
+        break;
+      case "REH":
+        weather.humidity = item.fcstValue;
+        break;
+    }
+  });
+  return weather;
+};
+
 /**
  * 체감온도를 계산하는 함수 (기상청 동계 공식)
  * @param temp 기온 ℃
  * @param windSpeed 풍속 m/s
  * @returns {string} 계산된 체감온도
  */
-const calculateFeelsLikeTemp = (temp: number, windSpeed: number | undefined): string => {
+const calculateFeelsLikeTemp = (
+  temp: number,
+  windSpeed: number | undefined
+): string => {
   if (windSpeed === undefined) return temp.toFixed(1);
   const windSpeedKmh = windSpeed * 3.6;
   if (windSpeedKmh <= 4.8) {
@@ -34,6 +64,26 @@ const calculateFeelsLikeTemp = (temp: number, windSpeed: number | undefined): st
     11.37 * Math.pow(windSpeedKmh, 0.16) +
     0.3965 * temp * Math.pow(windSpeedKmh, 0.16);
   return feelsLike.toFixed(1);
+};
+
+const findCurrentForecastItems = (items: KMAApiItem[]): KMAApiItem[] => {
+  const now = new Date();
+  const base_date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}${String(now.getDate()).padStart(2, "0")}`;
+  const fcst_time = `${String(now.getHours()).padStart(2, "0")}00`;
+
+  let targetItems = items.filter(
+    (item) => item.fcstDate === base_date && item.fcstTime === fcst_time
+  );
+
+  // 현재 시간에 맞는 예보가 없으면 가장 가까운 시간의 예보를 찾음
+  if (targetItems.length === 0 && items.length > 0) {
+    const closestTime = items[0].fcstTime;
+    targetItems = items.filter((item) => item.fcstTime === closestTime);
+  }
+  return targetItems;
 };
 
 /**
@@ -56,51 +106,16 @@ export const getWeather = async (
     const data = await response.json();
 
     if (data.response?.header?.resultCode !== "00") {
-      console.error("API Error:", data.response?.header?.resultMsg || data.error);
+      console.error(
+        "API Error:",
+        data.response?.header?.resultMsg || data.error
+      );
       return null;
     }
 
-    const items: KMAApiItem[] = data.response.body.items.item;
-    const weather: Partial<
-      WeatherData & { windSpeed?: string; humidity?: string }
-    > = {};
-
-    const now = new Date();
-    const base_date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}${String(now.getDate()).padStart(2, "0")}`;
-    const fcst_time = `${String(now.getHours()).padStart(2, "0")}00`;
-
-    const targetItems = items.filter(
-      (item) => item.fcstDate === base_date && item.fcstTime === fcst_time
-    );
-
-    // 현재 시간에 맞는 예보가 없으면 가장 가까운 시간의 예보를 찾음
-    if (targetItems.length === 0 && items.length > 0) {
-        const closestTime = items[0].fcstTime;
-        items.filter(item => item.fcstTime === closestTime).forEach(item => targetItems.push(item));
-    }
-
-    targetItems.forEach((item: KMAApiItem) => {
-      switch (item.category) {
-        case "TMP":
-          weather.temp = item.fcstValue;
-          break;
-        case "SKY":
-          weather.sky = item.fcstValue;
-          break;
-        case "PTY":
-          weather.pty = item.fcstValue;
-          break;
-        case "WSD":
-          weather.windSpeed = item.fcstValue;
-          break;
-        case "REH":
-          weather.humidity = item.fcstValue;
-          break;
-      }
-    });
+    const allItems: KMAApiItem[] = data.response.body.items.item;
+    const currentItems = findCurrentForecastItems(allItems);
+    const weather = parseWeatherItems(currentItems);
 
     if (Object.keys(weather).length === 0) {
       console.error("현재 시간과 가까운 날씨 데이터를 가져오지 못했습니다.");
@@ -162,4 +177,3 @@ export const getWeatherCondition = (pty: string, sky: string): string => {
       return "알 수 없음";
   }
 };
-
