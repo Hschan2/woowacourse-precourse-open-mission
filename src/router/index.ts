@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Home from "../pages/Home.vue";
-import MoodSelect from "../pages/MoodSelect.vue";
+import Home from "/src/pages/Home.vue";
+import MoodSelect from "/src/pages/MoodSelect.vue";
 
 const routes = [
   { path: "/", name: "Home", component: Home },
