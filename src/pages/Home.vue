@@ -13,6 +13,7 @@
       class="col-start-1 row-start-1 pt-6 pr-6 align-self-start justify-self-end"
     >
       <button
+        @click="openLottoGame"
         class="px-4 py-1.5 bg-[#777] text-white text-sm rounded-lg hover:bg-[#666] transition cursor-pointer"
       >
         {{ UI_MESSAGES.MINI_GAME }}
@@ -54,6 +55,7 @@
         </div>
       </div>
     </div>
+    <LottoGame v-if="showLottoGame" @close="closeLottoGame" />
   </div>
 </template>
 
@@ -62,8 +64,10 @@ import { ref } from "vue";
 import { UI_MESSAGES } from "/src/constants/messages";
 import { useLocation } from "/src/composables/useLocation";
 import logo from "/src/assets/logo.png";
+import LottoGame from "/src/components/LottoGame.vue";
 
 const showPermissionModal = ref(false);
+const showLottoGame = ref(false);
 const { requestLocation } = useLocation();
 
 const handleStartClick = () => {
@@ -73,5 +77,13 @@ const handleStartClick = () => {
 const handleAllowClick = () => {
   showPermissionModal.value = false;
   requestLocation();
+};
+
+const openLottoGame = () => {
+  showLottoGame.value = true;
+};
+
+const closeLottoGame = () => {
+  showLottoGame.value = false;
 };
 </script>
