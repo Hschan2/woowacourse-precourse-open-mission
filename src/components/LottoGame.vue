@@ -1,5 +1,5 @@
 <template>
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-20">
+  <div class="fixed inset-0 bg-[rgba(0,0,0,0.7)] backdrop-blur-sm flex justify-center items-center z-20">
     <div class="bg-gray-100 p-8 rounded-2xl shadow-xl w-full max-w-sm mx-4">
       <button @click="$emit('close')" class="absolute top-4 right-4 text-white text-lg font-bold cursor-pointer hover:text-gray">
         &times;
@@ -69,7 +69,7 @@
 
       <div v-if="gameState === 'results' && results" class="text-center">
         <h2 class="text-2xl font-bold mb-4">게임 결과 (당첨 통계)</h2>
-        
+
         <div class="mb-4">
           <h3 class="font-bold text-gray-800">구매한 번호</h3>
           <ul class="border rounded-md p-2 bg-white max-h-24 overflow-y-auto text-sm">
