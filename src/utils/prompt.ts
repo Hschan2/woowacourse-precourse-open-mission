@@ -8,6 +8,7 @@ interface PromptData {
   airQualityData: any;
   selectedMoods: string[];
   isReRecommendation: boolean;
+  excludedFoods: string[];
 }
 
 export const buildPrompt = (data: PromptData): string => {
@@ -17,6 +18,7 @@ export const buildPrompt = (data: PromptData): string => {
     airQualityData,
     selectedMoods,
     isReRecommendation,
+    excludedFoods,
   } = data;
 
   let weatherText = "알 수 없음";
@@ -42,6 +44,12 @@ export const buildPrompt = (data: PromptData): string => {
 
   if (isReRecommendation) {
     prompt += "\n\n이전에 추천해준 것과는 다른 새로운 음식을 추천해줘.";
+  }
+
+  if (excludedFoods.length > 0) {
+    prompt += `\n\n다음 음식들은 제외하고 추천해줘: ${excludedFoods.join(
+      ", "
+    )}`;
   }
   prompt += `\n<!-- cache_buster: ${Date.now()} -->`;
   return prompt;
