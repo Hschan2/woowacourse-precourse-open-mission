@@ -27,6 +27,7 @@ export function useFoodRecommendation() {
   const isSubmitting = ref(false);
   const recommendationResult = ref<Recommendation | null>(null);
   const selectedMoods = ref<string[]>([]);
+  const recommendedFoodHistory = ref<string[]>([]);
 
   const fetchInitialData = async (lat: number, lon: number) => {
     isLoading.value = true;
@@ -63,9 +64,13 @@ export function useFoodRecommendation() {
       airQualityData: airQualityData.value,
       selectedMoods: selectedMoods.value,
       isReRecommendation,
+      excludedFoods: recommendedFoodHistory.value,
     });
 
     const result = await callFoodRecommendationAPI(prompt);
+    if (result && result.foodName) {
+      recommendedFoodHistory.value.push(result.foodName);
+    }
     recommendationResult.value = result;
 
     isSubmitting.value = false;
@@ -83,6 +88,7 @@ export function useFoodRecommendation() {
   const reset = () => {
     recommendationResult.value = null;
     selectedMoods.value = [];
+    recommendedFoodHistory.value = [];
   };
 
   return {
@@ -92,6 +98,7 @@ export function useFoodRecommendation() {
     isSubmitting,
     recommendationResult,
     selectedMoods,
+    recommendedFoodHistory,
     fetchInitialData,
     getRecommendation,
     toggleMood,
