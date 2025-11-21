@@ -60,9 +60,12 @@
           min="1"
           max="45"
         />
-        <div class="text-center">
-          <button @click="checkResults" class="bg-green-600 text-white px-10 py-3 rounded-full text-lg cursor-pointer hover:bg-green-700">
+        <div class="text-center flex justify-center gap-2">
+          <button @click="checkResults" class="bg-green-600 text-white px-6 py-3 rounded-full text-lg cursor-pointer hover:bg-green-700">
             결과 확인
+          </button>
+          <button @click="generateWinningNumbersAndCheck" class="bg-yellow-500 text-white px-6 py-3 rounded-full text-lg cursor-pointer hover:bg-yellow-600">
+            번호 자동 생성
           </button>
         </div>
       </div>
@@ -205,6 +208,23 @@ const checkResults = () => {
     roi: roi,
   };
   gameState.value = 'results';
+};
+
+const generateWinningNumbersAndCheck = () => {
+  const numbers = new Set<number>();
+  while (numbers.size < LOTTO.NUMBERS_COUNT) {
+    const randomNumber = Math.floor(Math.random() * LOTTO.MAX_NUMBER) + LOTTO.MIN_NUMBER;
+    numbers.add(randomNumber);
+  }
+  winningNumbers.value = Array.from(numbers);
+
+  let newBonusNumber: number | null = null;
+  while (newBonusNumber === null || numbers.has(newBonusNumber)) {
+    newBonusNumber = Math.floor(Math.random() * LOTTO.MAX_NUMBER) + LOTTO.MIN_NUMBER;
+  }
+  bonusNumber.value = newBonusNumber;
+
+  checkResults();
 };
 
 const restartGame = () => {
