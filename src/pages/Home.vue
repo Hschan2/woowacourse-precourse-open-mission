@@ -62,7 +62,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { UI_MESSAGES } from "/src/constants/messages";
-import { useLocation } from "/src/composables/useLocation";
+import { useLocation } from "/src/hooks/useLocation";
 import logo from "/src/assets/logo.png";
 import LottoGame from "/src/components/LottoGame.vue";
 
