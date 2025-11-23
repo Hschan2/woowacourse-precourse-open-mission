@@ -149,7 +149,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useFoodRecommendation } from "/src/composables/useFoodRecommendation";
+import { useFoodRecommendation } from "/src/hooks/useFoodRecommendation";
 import { moods } from "/src/constants/moods";
 import { ERROR_MESSAGES, UI_MESSAGES } from "/src/constants/messages";
 
