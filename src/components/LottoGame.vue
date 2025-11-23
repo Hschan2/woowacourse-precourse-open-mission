@@ -61,10 +61,10 @@
           max="45"
         />
         <div class="text-center flex justify-center gap-2">
-          <button @click="checkResults" class="bg-green-600 text-white px-6 py-3 rounded-full text-lg cursor-pointer hover:bg-green-700">
+          <button @click="showResults" class="bg-green-600 text-white px-6 py-3 rounded-full text-lg cursor-pointer hover:bg-green-700">
             결과 확인
           </button>
-          <button @click="generateWinningNumbersAndCheck" class="bg-yellow-500 text-white px-6 py-3 rounded-full text-lg cursor-pointer hover:bg-yellow-600">
+          <button @click="autoGenerateAndShowResults" class="bg-yellow-500 text-white px-6 py-3 rounded-full text-lg cursor-pointer hover:bg-yellow-600">
             번호 자동 생성
           </button>
         </div>
@@ -106,134 +106,50 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { LOTTO, ERROR_MESSAGES } from '/src/constants/lotto';
+import { useLotto } from '/src/hooks/useLotto';
 import ErrorModal from './ErrorModal.vue';
 
 type GameState = 'start' | 'purchasing' | 'purchased' | 'results';
 
 const emit = defineEmits(['close']);
-
 const gameState = ref<GameState>('start');
-const purchaseAmount = ref<number | null>(null);
-const lottos = ref<number[][]>([]);
-const winningNumbers = ref<(number | null)[]>(Array(6).fill(null));
-const bonusNumber = ref<number | null>(null);
-const results = ref<{ ranks: Record<string, number>; roi: string } | null>(null);
-const errorMessage = ref<string | null>(null);
 const showPurchasedLottos = ref(false);
 
-const generateLottoNumbers = (): number[] => {
-  const numbers = new Set<number>();
-  while (numbers.size < LOTTO.NUMBERS_COUNT) {
-    const randomNumber = Math.floor(Math.random() * LOTTO.MAX_NUMBER) + LOTTO.MIN_NUMBER;
-    numbers.add(randomNumber);
-  }
-  return Array.from(numbers).sort((a, b) => a - b);
-};
+const {
+  purchaseAmount,
+  lottos,
+  winningNumbers,
+  bonusNumber,
+  results,
+  errorMessage,
+  purchaseLottos: purchaseLottosLogic,
+  checkResults,
+  generateWinningNumbersAndCheck,
+  restartGame: restartGameLogic,
+} = useLotto();
 
 const purchaseLottos = () => {
-  if (
-    purchaseAmount.value === null ||
-    purchaseAmount.value <= 0 ||
-    purchaseAmount.value % LOTTO.PRICE !== 0
-  ) {
-    errorMessage.value = ERROR_MESSAGES.INVALID_PURCHASE_AMOUNT;
-    return;
+  if (purchaseLottosLogic()) {
+    gameState.value = 'purchased';
   }
-
-  const numberOfLottos = purchaseAmount.value / LOTTO.PRICE;
-  const newLottos: number[][] = [];
-  for (let i = 0; i < numberOfLottos; i++) {
-    newLottos.push(generateLottoNumbers());
-  }
-  lottos.value = newLottos;
-  gameState.value = 'purchased';
 };
 
-const checkResults = () => {
-  const winningNumbersSet = new Set(winningNumbers.value.filter(n => n !== null));
-  if (winningNumbersSet.size !== LOTTO.NUMBERS_COUNT || winningNumbers.value.some(n => n === null || n < LOTTO.MIN_NUMBER || n > LOTTO.MAX_NUMBER)) {
-    errorMessage.value = ERROR_MESSAGES.INVALID_WINNING_NUMBERS;
-    return;
-  }
-
-  if (bonusNumber.value === null || bonusNumber.value < LOTTO.MIN_NUMBER || bonusNumber.value > LOTTO.MAX_NUMBER || winningNumbersSet.has(bonusNumber.value)) {
-    errorMessage.value = ERROR_MESSAGES.INVALID_BONUS_NUMBER;
-    return;
-  }
-
-  const finalWinningNumbers = Array.from(winningNumbersSet) as number[];
-  const finalBonusNumber = bonusNumber.value as number;
-
-  const prizeRanks = {
-    '1등 (6개 일치)': { prize: 2_000_000_000, count: 0 },
-    '2등 (5개 일치, 보너스 볼 일치)': { prize: 30_000_000, count: 0 },
-    '3등 (5개 일치)': { prize: 1_500_000, count: 0 },
-    '4등 (4개 일치)': { prize: 50_000, count: 0 },
-    '5등 (3개 일치)': { prize: 5_000, count: 0 },
-  };
-
-  lottos.value.forEach(lotto => {
-    const matchCount = lotto.filter(num => finalWinningNumbers.includes(num)).length;
-    const hasBonus = lotto.includes(finalBonusNumber);
-
-    if (matchCount === 6) {
-      prizeRanks['1등 (6개 일치)'].count++;
-    } else if (matchCount === 5 && hasBonus) {
-      prizeRanks['2등 (5개 일치, 보너스 볼 일치)'].count++;
-    } else if (matchCount === 5) {
-      prizeRanks['3등 (5개 일치)'].count++;
-    } else if (matchCount === 4) {
-      prizeRanks['4등 (4개 일치)'].count++;
-    } else if (matchCount === 3) {
-      prizeRanks['5등 (3개 일치)'].count++;
-    }
-  });
-
-  let totalPrize = 0;
-  const rankCounts: Record<string, number> = {};
-  for (const rank in prizeRanks) {
-    const { prize, count } = prizeRanks[rank as keyof typeof prizeRanks];
-    if (count > 0) {
-      totalPrize += prize * count;
-    }
-    rankCounts[rank] = count;
-  }
-
-  const totalSpent = purchaseAmount.value ?? 0;
-  const roi = totalSpent > 0 ? ((totalPrize / totalSpent) * 100).toFixed(1) : '0.0';
-
-  results.value = {
-    ranks: rankCounts,
-    roi: roi,
-  };
-  gameState.value = 'results';
-};
-
-const generateWinningNumbersAndCheck = () => {
-  const numbers = new Set<number>();
-  while (numbers.size < LOTTO.NUMBERS_COUNT) {
-    const randomNumber = Math.floor(Math.random() * LOTTO.MAX_NUMBER) + LOTTO.MIN_NUMBER;
-    numbers.add(randomNumber);
-  }
-  winningNumbers.value = Array.from(numbers);
-
-  let newBonusNumber: number | null = null;
-  while (newBonusNumber === null || numbers.has(newBonusNumber)) {
-    newBonusNumber = Math.floor(Math.random() * LOTTO.MAX_NUMBER) + LOTTO.MIN_NUMBER;
-  }
-  bonusNumber.value = newBonusNumber;
-
+const showResults = () => {
   checkResults();
-};
+  if (results.value) {
+    gameState.value = 'results';
+  }
+}
+
+const autoGenerateAndShowResults = () => {
+  generateWinningNumbersAndCheck();
+  if (results.value) {
+    gameState.value = 'results';
+  }
+}
 
 const restartGame = () => {
+  restartGameLogic();
   gameState.value = 'start';
-  purchaseAmount.value = null;
-  lottos.value = [];
-  winningNumbers.value = Array(6).fill(null);
-  bonusNumber.value = null;
-  results.value = null;
-  errorMessage.value = null;
 };
 </script>
