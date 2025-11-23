@@ -71,7 +71,13 @@ const showLottoGame = ref(false);
 const { requestLocation } = useLocation();
 
 const handleStartClick = () => {
-  showPermissionModal.value = true;
+  navigator.permissions.query({ name: "geolocation" }).then((permission) => {
+    if (permission.state === "granted") {
+      requestLocation();
+      return;
+    }
+    showPermissionModal.value = true;
+  });
 };
 
 const handleAllowClick = () => {
