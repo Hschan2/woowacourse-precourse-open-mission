@@ -71,16 +71,14 @@ export function useLotto() {
       ).length;
       const hasBonus = lotto.includes(finalBonusNumber);
       const rank = getRank(matchCount, hasBonus);
-      if (rank) {
-        rankCounts[rank]++;
-      }
-    });
+              if (rank) {
+                rankCounts[rank] = (rankCounts[rank] || 0) + 1;
+              }    });
 
     let totalPrize = 0;
-    for (const rank in rankCounts) {
-      totalPrize +=
-        PRIZE_RANKS[rank as keyof typeof PRIZE_RANKS].prize * rankCounts[rank];
-    }
+        for (const rank in rankCounts) {
+            totalPrize += PRIZE_RANKS[rank as keyof typeof PRIZE_RANKS].prize * rankCounts[rank]!; // undefined가 될 수 없음으로 어센셜 추가
+        }
 
     const totalSpent = purchaseAmount.value ?? 0;
     const roi =
