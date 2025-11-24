@@ -1,26 +1,26 @@
 <template>
   <div class="fixed inset-0 bg-[rgba(0,0,0,0.7)] backdrop-blur-sm flex justify-center items-center z-20">
-    <div class="bg-gray-100 p-8 rounded-2xl shadow-xl w-full max-w-sm mx-4">
-      <button @click="$emit('close')" class="absolute top-4 right-4 text-white text-lg font-bold cursor-pointer hover:text-gray">
+    <div class="relative bg-gray-100 p-4 mobile:p-6 tablet:p-8 rounded-2xl shadow-xl w-full max-w-sm mx-4">
+      <button @click="$emit('close')" class="absolute top-2 right-3 text-gray-500 text-2xl font-bold cursor-pointer hover:text-gray-700">
         &times;
       </button>
 
       <div v-if="gameState === 'start'" class="text-center">
-        <h2 class="text-3xl font-bold mb-6">로또 게임</h2>
-        <button @click="gameState = 'purchasing'" class="bg-blue-600 text-white px-10 py-3 rounded-full text-lg cursor-pointer hover:bg-blue-700">
+        <h2 class="text-2xl mobile:text-3xl font-bold mb-4 mobile:mb-6">로또 게임</h2>
+        <button @click="gameState = 'purchasing'" class="bg-blue-600 text-white px-8 py-2 mobile:px-10 mobile:py-3 rounded-full text-base mobile:text-lg cursor-pointer hover:bg-blue-700">
           시작
         </button>
       </div>
 
       <div v-if="gameState === 'purchasing'" class="text-center">
-        <h2 class="text-2xl font-bold mb-6">몇 장 구매할까요?</h2>
+        <h2 class="text-xl mobile:text-2xl font-bold mb-4 mobile:mb-6">몇 장 구매할까요?</h2>
         <input
           type="number"
           v-model.number="purchaseAmount"
           class="w-full p-3 text-center border-2 border-gray-300 rounded-lg mb-4"
           placeholder="1000원 단위로 입력"
         />
-        <button @click="purchaseLottos" class="bg-blue-600 text-white px-10 py-3 rounded-full text-lg cursor-pointer hover:bg-blue-700">
+        <button @click="purchaseLottos" class="bg-blue-600 text-white px-8 py-2 mobile:px-10 mobile:py-3 rounded-full text-base mobile:text-lg cursor-pointer hover:bg-blue-700">
           구입
         </button>
       </div>
@@ -41,13 +41,13 @@
         </ul>
 
         <h3 class="text-center font-bold mb-2">당첨 번호를 입력하세요.</h3>
-        <div class="grid grid-cols-6 gap-2 mb-4">
+        <div class="grid grid-cols-6 gap-1 mobile:gap-2 mb-4">
           <input
             v-for="i in 6"
             :key="'win-' + i"
             type="number"
             v-model.number="winningNumbers[i - 1]"
-            class="w-full p-2 text-center border rounded-md"
+            class="w-full p-1 mobile:p-2 text-center border rounded-md"
             min="1"
             max="45"
           />
@@ -58,20 +58,21 @@
           v-model.number="bonusNumber"
           class="w-full p-2 text-center border rounded-md mb-6"
           min="1"
+
           max="45"
         />
-        <div class="text-center flex justify-center gap-2">
-          <button @click="showResults" class="bg-green-600 text-white px-6 py-3 rounded-full text-lg cursor-pointer hover:bg-green-700">
+        <div class="text-center flex flex-col mobile:flex-row justify-center gap-2">
+          <button @click="showResults" class="w-full mobile:w-auto bg-green-600 text-white px-4 py-2 text-base mobile:px-6 mobile:py-3 mobile:text-lg cursor-pointer hover:bg-green-700">
             결과 확인
           </button>
-          <button @click="autoGenerateAndShowResults" class="bg-yellow-500 text-white px-6 py-3 rounded-full text-lg cursor-pointer hover:bg-yellow-600">
+          <button @click="autoGenerateAndShowResults" class="w-full mobile:w-auto bg-yellow-500 text-white px-4 py-2 text-base mobile:px-6 mobile:py-3 mobile:text-lg cursor-pointer hover:bg-yellow-600">
             번호 자동 생성
           </button>
         </div>
       </div>
 
       <div v-if="gameState === 'results' && results" class="text-center">
-        <h2 class="text-2xl font-bold mb-4">게임 결과 (당첨 통계)</h2>
+        <h2 class="text-xl mobile:text-2xl font-bold mb-4">게임 결과 (당첨 통계)</h2>
 
         <div class="mb-4">
           <h3 class="font-bold text-gray-800">구매한 번호</h3>
@@ -92,10 +93,10 @@
             {{ rank }}: {{ count }}개
           </p>
         </div>
-        <p class="font-bold text-lg mt-4">
+        <p class="font-bold text-base mobile:text-lg mt-4">
           총 수익률은 {{ results.roi }}%입니다.
         </p>
-        <button @click="restartGame" class="mt-6 bg-gray-500 text-white px-8 py-2 rounded-full hover:bg-gray-600">
+        <button @click="restartGame" class="mt-6 bg-gray-500 text-white px-6 py-2 rounded-full text-base hover:bg-gray-600">
           다시 시작
         </button>
       </div>

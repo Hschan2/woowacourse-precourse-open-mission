@@ -1,31 +1,33 @@
 <template>
-  <div class="grid grid-cols-1 grid-rows-1 min-h-screen pb-16 bg-white">
-    <div class="col-start-1 row-start-1 pt-6 pl-6 place-self-start-start">
+  <div class="relative min-h-screen pb-16 bg-white flex flex-col">
+    <div
+      class="absolute top-0 left-0 right-0 p-4 mobile:p-6 flex justify-between items-center z-30"
+    >
       <router-link
         to="/"
-        class="text-xl font-bold text-neutral-800 cursor-pointer"
+        class="text-lg mobile:text-xl font-bold text-neutral-800 cursor-pointer"
       >
         {{ UI_MESSAGES.APP_TITLE }}
       </router-link>
-    </div>
-    <div
-      class="col-start-1 row-start-1 pt-6 pr-6 align-self-start justify-self-end"
-    >
       <button
-        class="px-4 py-1.5 bg-[#777] text-white text-sm rounded-lg hover:bg-[#666] transition cursor-pointer"
+        @click="openLottoGame"
+        class="px-3 mobile:px-4 tablet:px-5 py-1.5 mobile:py-2 tablet:py-2.5 bg-[#777] text-white text-xs mobile:text-sm tablet:text-base rounded-lg hover:bg-[#666] transition cursor-pointer"
       >
         {{ UI_MESSAGES.MINI_GAME }}
       </button>
     </div>
 
-    <div class="col-start-1 row-start-1 place-self-center w-full">
+    <div
+      class="pt-[5rem] flex flex-col items-center justify-center w-full flex-grow"
+    >
+      <!-- flex-grow added -->
       <div v-if="isSubmitting" class="flex flex-col items-center text-center">
         <img
           src="/mat.svg"
           :alt="UI_MESSAGES.LOADING_ALT"
-          class="w-24 h-24 animate-bounce"
+          class="w-20 h-20 mobile:w-24 mobile:h-24 animate-bounce"
         />
-        <p class="mt-4 text-lg font-bold text-gray-700">
+        <p class="mt-4 text-base mobile:text-lg font-bold text-gray-700">
           {{ UI_MESSAGES.AI_RECOMMENDING }}
         </p>
       </div>
@@ -34,17 +36,19 @@
         v-else-if="recommendationResult"
         class="flex flex-col items-center text-center px-4"
       >
-        <h2 class="text-2xl font-bold mb-2">
+        <h2 class="text-xl mobile:text-2xl font-bold mb-2">
           {{ UI_MESSAGES.AI_RECOMMENDATION_TITLE }}
         </h2>
-        <h1 class="text-4xl font-extrabold text-blue-600 mb-6">
+        <h1
+          class="text-3xl mobile:text-4xl font-extrabold text-blue-600 mb-4 mobile:mb-6"
+        >
           {{ recommendationResult.foodName }}
         </h1>
 
         <div
-          class="w-full max-w-md p-6 bg-gray-50 rounded-lg border border-gray-200"
+          class="w-full max-w-md p-4 mobile:p-6 bg-gray-50 rounded-lg border border-gray-200"
         >
-          <p class="text-lg font-medium text-gray-800 mb-4">
+          <p class="text-base mobile:text-lg font-medium text-gray-800 mb-4">
             "{{ recommendationResult.reason }}"
           </p>
 
@@ -55,16 +59,14 @@
               {{ UI_MESSAGES.AVERAGE_PRICE }}
             </div>
             <div class="text-gray-800">
-              {{
-                Number(recommendationResult.averagePrice).toLocaleString()
+              {{ Number(recommendationResult.averagePrice).toLocaleString()
               }}{{ UI_MESSAGES.UNIT_WON }}
             </div>
             <div class="font-semibold text-gray-600">
               {{ UI_MESSAGES.AVERAGE_CALORIES }}
             </div>
             <div class="text-gray-800">
-              {{
-                Number(recommendationResult.calories).toLocaleString()
+              {{ Number(recommendationResult.calories).toLocaleString()
               }}{{ UI_MESSAGES.UNIT_KCAL }}
             </div>
           </div>
@@ -88,16 +90,18 @@
           {{ UI_MESSAGES.DISCLAIMER }}
         </p>
 
-        <div class="flex space-x-4 mt-8">
+        <div
+          class="flex flex-col mobile:flex-row space-y-3 mobile:space-y-0 mobile:space-x-4 mt-8 w-full max-w-md"
+        >
           <button
             @click="recommendAgainWithSameMood"
-            class="px-6 py-2 bg-blue-600 text-white font-bold rounded-full text-lg hover:bg-blue-700 transition cursor-pointer"
+            class="w-full mobile:w-auto px-5 py-2 bg-blue-600 text-white font-bold rounded-full text-base hover:bg-blue-700 transition cursor-pointer"
           >
             {{ UI_MESSAGES.RECOMMEND_AGAIN_SAME_MOOD }}
           </button>
           <button
             @click="resetRecommendation"
-            class="px-6 py-2 bg-gray-500 text-white font-bold rounded-full text-lg hover:bg-gray-600 transition cursor-pointer"
+            class="w-full mobile:w-auto px-5 py-2 bg-gray-500 text-white font-bold rounded-full text-base hover:bg-gray-600 transition cursor-pointer"
           >
             {{ UI_MESSAGES.RECOMMEND_AGAIN_NEW_MOOD }}
           </button>
@@ -105,7 +109,9 @@
       </div>
 
       <div v-else class="flex flex-col items-center w-full">
-        <h1 class="text-2xl font-bold mt-16 mb-10">
+        <h1
+          class="text-xl mobile:text-2xl font-bold mt-12 mb-8 mobile:mt-16 mobile:mb-10"
+        >
           {{ UI_MESSAGES.MOOD_QUESTION }}
         </h1>
 
@@ -115,27 +121,31 @@
 
         <div
           v-if="!isLoading && (weatherData || airQualityData)"
-          class="grid grid-cols-3 gap-3 w-[80%] max-w-3xl"
+          class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-2 w-full max-w-[360px] md:max-w-xl mx-auto"
         >
           <button
             v-for="(mood, idx) in moods"
             :key="idx"
             @click="toggleMood(mood)"
-            class="flex items-center justify-center border border-gray-300 rounded-full py-3 px-6 transition text-sm cursor-pointer whitespace-nowrap"
+            class="flex items-center justify-center border border-gray-300 rounded-full py-2 px-1 mobile:py-2 mobile:px-1 tablet:py-3 tablet:px-2 text-xs mobile:text-sm cursor-pointer whitespace-nowrap max-w-[140px] mx-auto"
             :class="[
               selectedMoods.includes(mood)
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-800 hover:bg-gray-100',
+              'w-full flex items-center justify-center border border-gray-300 rounded-full py-3 px-4 text-sm cursor-pointer',
+              'max-w-[150px] md:max-w-[180px]',
             ]"
           >
-            {{ mood }}
+            <span class="break-words text-center leading-tight">
+              {{ mood }}
+            </span>
           </button>
         </div>
 
-        <div v-if="!isLoading" class="mt-12">
+        <div v-if="!isLoading" class="mt-10 mobile:mt-12">
           <button
             @click="handleNextClick"
-            class="px-8 py-2 bg-blue-600 text-white font-bold rounded-full text-lg hover:bg-blue-700 transition cursor-pointer disabled:bg-gray-400"
+            class="px-6 py-1.5 mobile:px-8 mobile:py-2 bg-blue-600 text-white font-bold rounded-full text-base mobile:text-lg hover:bg-blue-700 transition cursor-pointer disabled:bg-gray-400"
             :disabled="selectedMoods.length === 0"
           >
             {{ UI_MESSAGES.NEXT }}
@@ -143,18 +153,30 @@
         </div>
       </div>
     </div>
+    <LottoGame v-if="showLottoGame" @close="closeLottoGame" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useFoodRecommendation } from "/src/hooks/useFoodRecommendation";
-import { moods } from "/src/constants/moods";
-import { ERROR_MESSAGES, UI_MESSAGES } from "/src/constants/messages";
+import { useFoodRecommendation } from "../hooks/useFoodRecommendation";
+import { moods } from "../constants/moods";
+import { ERROR_MESSAGES, UI_MESSAGES } from "../constants/messages";
+import LottoGame from "../components/LottoGame.vue";
 
 const route = useRoute();
 const router = useRouter();
+
+const showLottoGame = ref(false);
+
+const openLottoGame = () => {
+  showLottoGame.value = true;
+};
+
+const closeLottoGame = () => {
+  showLottoGame.value = false;
+};
 
 const {
   weatherData,
