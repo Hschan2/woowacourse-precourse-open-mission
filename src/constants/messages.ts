@@ -1,8 +1,9 @@
 export const ERROR_MESSAGES = {
   NO_LOCATION_INFO: "위치 정보가 없습니다. 시작 페이지로 돌아갑니다.",
   DATA_FETCH_FAILED: "데이터를 가져오는 데 실패했습니다. 잠시 후 다시 시도해주세요.",
-  AI_REQUEST_FAILED: (error: any) => `AI 서버 요청에 실패했습니다: ${error.message}`,
+  AI_REQUEST_FAILED: (error?: any) => `AI 서버 요청에 실패했습니다: ${error.message}`,
   GET_DATA_FAILED: "데이터를 가져오는 데 실패했습니다:",
+  WEATHER_API_FAILED: "날씨 데이터를 가져오지 못했습니다.",
 };
 
 export const UI_MESSAGES = {
