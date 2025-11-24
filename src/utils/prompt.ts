@@ -1,6 +1,6 @@
-import { getWeatherCondition } from "/src/services/weatherAPI";
-import { getPm10Grade } from "/src/services/airQualityAPI";
-import { getFormattedTime } from "/src/utils/time";
+import { getWeatherCondition } from "../services/weatherAPI";
+import { getPm10Grade } from "../services/airQualityAPI";
+import { getFormattedTime } from "./time";
 
 interface PromptData {
   locationAddress: string;

@@ -1,6 +1,6 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { UI_MESSAGES } from "/src/constants/messages";
+import { UI_MESSAGES } from "../constants/messages";
 
 export function useLocation() {
   const router = useRouter();

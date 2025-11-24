@@ -1,10 +1,10 @@
 import { ref } from "vue";
-import { getWeather } from "/src/services/weatherAPI";
-import { getAirQualityData } from "/src/services/airQualityAPI";
-import { getAddressFromCoords } from "/src/services/locationAPI";
-import { callFoodRecommendationAPI } from "/src/services/recommendationAPI";
-import { buildPrompt } from "/src/utils/prompt";
-import { ERROR_MESSAGES, UI_MESSAGES } from "/src/constants/messages";
+import { getWeather } from "../services/weatherAPI";
+import { getAirQualityData } from "../services/airQualityAPI";
+import { getAddressFromCoords } from "../services/locationAPI";
+import { callFoodRecommendationAPI } from "../services/recommendationAPI";
+import { buildPrompt } from "../utils/prompt";
+import { ERROR_MESSAGES, UI_MESSAGES } from "../constants/messages";
 
 export interface Restaurant {
   name: string;

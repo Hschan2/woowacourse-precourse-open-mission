@@ -1,6 +1,6 @@
-import { API_BASE_URL, RECOMMEND_FOOD_API_PATH } from "/src/constants/api";
-import { ERROR_MESSAGES } from "/src/constants/messages";
-import type { Recommendation } from "/src/hooks/useFoodRecommendation";
+import { API_BASE_URL, RECOMMEND_FOOD_API_PATH } from "../constants/api";
+import { ERROR_MESSAGES } from "../constants/messages";
+import type { Recommendation } from "../hooks/useFoodRecommendation";
 
 export const callFoodRecommendationAPI = async (
   prompt: string

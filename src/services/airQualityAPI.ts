@@ -1,4 +1,4 @@
-import { AIR_QUALITY_GRADES } from "/src/constants/messages";
+import { AIR_QUALITY_GRADES } from "../constants/messages";
 import proj4 from "proj4";
 
 // WGS84 좌표계(위도, 경도) 정의

@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { LOTTO, ERROR_MESSAGES, PRIZE_RANKS } from "/src/constants/lotto";
+import { LOTTO, ERROR_MESSAGES, PRIZE_RANKS } from "../constants/lotto";
 
 export function useLotto() {
   const purchaseAmount = ref<number | null>(null);
