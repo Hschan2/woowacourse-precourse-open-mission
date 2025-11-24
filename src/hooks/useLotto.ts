@@ -1,5 +1,10 @@
 import { ref } from "vue";
 import { LOTTO, ERROR_MESSAGES, PRIZE_RANKS } from "../constants/lotto";
+import {
+  calculateRankCounts,
+  generateLottoSet,
+  sumPrizes,
+} from "../utils/lottoUtils";
 
 export function useLotto() {
   const purchaseAmount = ref<number | null>(null);
@@ -11,95 +16,49 @@ export function useLotto() {
   );
   const errorMessage = ref<string | null>(null);
 
-  const generateLottoNumbers = (): number[] => {
-    const numbers = new Set<number>();
-    while (numbers.size < LOTTO.NUMBERS_COUNT) {
-      const randomNumber =
-        Math.floor(Math.random() * LOTTO.MAX_NUMBER) + LOTTO.MIN_NUMBER;
-      numbers.add(randomNumber);
-    }
-    return Array.from(numbers).sort((a, b) => a - b);
-  };
-
-  const purchaseLottos = () => {
-    if (
-      purchaseAmount.value === null ||
-      purchaseAmount.value <= 0 ||
-      purchaseAmount.value % LOTTO.PRICE !== 0
-    ) {
+  const validatePurchaseAmount = (): boolean => {
+    if (purchaseAmount.value === null) {
       errorMessage.value = ERROR_MESSAGES.INVALID_PURCHASE_AMOUNT;
       return false;
     }
-
-    const numberOfLottos = purchaseAmount.value / LOTTO.PRICE;
-    const newLottos: number[][] = [];
-    for (let i = 0; i < numberOfLottos; i++) {
-      newLottos.push(generateLottoNumbers());
+    if (purchaseAmount.value <= 0) {
+      errorMessage.value = ERROR_MESSAGES.INVALID_PURCHASE_AMOUNT;
+      return false;
     }
-    lottos.value = newLottos;
+    if (purchaseAmount.value % LOTTO.PRICE !== 0) {
+      errorMessage.value = ERROR_MESSAGES.INVALID_PURCHASE_AMOUNT;
+      return false;
+    }
     return true;
   };
 
-  const getRank = (matchCount: number, hasBonus: boolean): string | null => {
-    if (matchCount === 6) return "1등 (6개 일치)";
-    if (matchCount === 5 && hasBonus) return "2등 (5개 일치, 보너스 볼 일치)";
-    if (matchCount === 5) return "3등 (5개 일치)";
-    if (matchCount === 4) return "4등 (4개 일치)";
-    if (matchCount === 3) return "5등 (3개 일치)";
-    return null;
-  };
+  const purchaseLottos = (): boolean => {
+    const ok = validatePurchaseAmount();
+    if (ok === false) return false;
 
-  const calculateResults = () => {
-    const finalWinningNumbers = winningNumbers.value.filter(
-      (n): n is number => n !== null
-    );
-    const finalBonusNumber = bonusNumber.value;
-
-    if (finalBonusNumber === null) return;
-
-    const rankCounts: Record<string, number> = Object.keys(PRIZE_RANKS).reduce(
-      (acc, rank) => {
-        acc[rank] = 0;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
-    lottos.value.forEach((lotto) => {
-      const matchCount = lotto.filter((num) =>
-        finalWinningNumbers.includes(num)
-      ).length;
-      const hasBonus = lotto.includes(finalBonusNumber);
-      const rank = getRank(matchCount, hasBonus);
-              if (rank) {
-                rankCounts[rank] = (rankCounts[rank] || 0) + 1;
-              }    });
-
-    let totalPrize = 0;
-        for (const rank in rankCounts) {
-            totalPrize += PRIZE_RANKS[rank as keyof typeof PRIZE_RANKS].prize * rankCounts[rank]!; // undefined가 될 수 없음으로 어센셜 추가
-        }
-
-    const totalSpent = purchaseAmount.value ?? 0;
-    const roi =
-      totalSpent > 0 ? ((totalPrize / totalSpent) * 100).toFixed(1) : "0.0";
-
-    results.value = {
-      ranks: rankCounts,
-      roi: roi,
-    };
+    const num = purchaseAmount.value! / LOTTO.PRICE;
+    const created: number[][] = [];
+    for (let i = 0; i < num; i++) {
+      created.push(
+        generateLottoSet(
+          LOTTO.MIN_NUMBER,
+          LOTTO.MAX_NUMBER,
+          LOTTO.NUMBERS_COUNT
+        )
+      );
+    }
+    lottos.value = created;
+    return true;
   };
 
   const validateWinningNumbers = (): boolean => {
-    const winningNumbersSet = new Set(
-      winningNumbers.value.filter((n) => n !== null)
-    );
-    if (
-      winningNumbersSet.size !== LOTTO.NUMBERS_COUNT ||
-      winningNumbers.value.some(
-        (n) => n === null || n < LOTTO.MIN_NUMBER || n > LOTTO.MAX_NUMBER
-      )
-    ) {
+    const nums = winningNumbers.value.filter((n): n is number => n !== null);
+    const set = new Set(nums);
+    if (set.size !== LOTTO.NUMBERS_COUNT) {
+      errorMessage.value = ERROR_MESSAGES.INVALID_WINNING_NUMBERS;
+      return false;
+    }
+    if (nums.some((n) => n < LOTTO.MIN_NUMBER || n > LOTTO.MAX_NUMBER)) {
       errorMessage.value = ERROR_MESSAGES.INVALID_WINNING_NUMBERS;
       return false;
     }
@@ -107,39 +66,62 @@ export function useLotto() {
   };
 
   const validateBonusNumber = (): boolean => {
-    const winningNumbersSet = new Set(
-      winningNumbers.value.filter((n) => n !== null)
+    const b = bonusNumber.value;
+    if (b === null) {
+      errorMessage.value = ERROR_MESSAGES.INVALID_BONUS_NUMBER;
+      return false;
+    }
+    if (b < LOTTO.MIN_NUMBER || b > LOTTO.MAX_NUMBER) {
+      errorMessage.value = ERROR_MESSAGES.INVALID_BONUS_NUMBER;
+      return false;
+    }
+    const winSet = new Set(
+      winningNumbers.value.filter((n): n is number => n !== null)
     );
-    if (
-      bonusNumber.value === null ||
-      bonusNumber.value < LOTTO.MIN_NUMBER ||
-      bonusNumber.value > LOTTO.MAX_NUMBER ||
-      winningNumbersSet.has(bonusNumber.value)
-    ) {
+    if (winSet.has(b)) {
       errorMessage.value = ERROR_MESSAGES.INVALID_BONUS_NUMBER;
       return false;
     }
     return true;
   };
 
+  const calculateResults = () => {
+    const finalWinning = winningNumbers.value.filter(
+      (n): n is number => n !== null
+    );
+    const finalBonus = bonusNumber.value;
+    if (finalBonus === null) return;
+
+    const ranks = calculateRankCounts(lottos.value, finalWinning, finalBonus);
+    const totalPrize = sumPrizes(ranks, PRIZE_RANKS);
+    const totalSpent = purchaseAmount.value ?? 0;
+    const roi =
+      totalSpent > 0 ? ((totalPrize / totalSpent) * 100).toFixed(1) : "0.0";
+    results.value = { ranks, roi };
+  };
+
   const checkResults = () => {
-    if (!validateWinningNumbers() || !validateBonusNumber()) {
-      return;
-    }
+    const ok1 = validateWinningNumbers();
+    if (ok1 === false) return;
+    const ok2 = validateBonusNumber();
+    if (ok2 === false) return;
     calculateResults();
   };
 
   const generateWinningNumbersAndCheck = () => {
-    winningNumbers.value = generateLottoNumbers();
+    winningNumbers.value = generateLottoSet(
+      LOTTO.MIN_NUMBER,
+      LOTTO.MAX_NUMBER,
+      LOTTO.NUMBERS_COUNT
+    ).map((n) => n);
 
-    let newBonusNumber: number | null = null;
-    const winningSet = new Set(winningNumbers.value);
-    while (newBonusNumber === null || winningSet.has(newBonusNumber)) {
-      newBonusNumber =
+    let newBonus: number | null = null;
+    const winSet = new Set(winningNumbers.value as number[]);
+    while (newBonus === null || winSet.has(newBonus)) {
+      newBonus =
         Math.floor(Math.random() * LOTTO.MAX_NUMBER) + LOTTO.MIN_NUMBER;
     }
-    bonusNumber.value = newBonusNumber;
-
+    bonusNumber.value = newBonus;
     checkResults();
   };
 
