@@ -1,3 +1,5 @@
+import { ERROR_MESSAGES } from "../constants/messages";
+
 interface WeatherData {
   temp: string;
   sky: string;
@@ -19,27 +21,18 @@ interface KMAApiItem {
 const parseWeatherItems = (
   items: KMAApiItem[]
 ): Partial<WeatherData & { windSpeed?: string; humidity?: string }> => {
-  const weather: Partial<WeatherData & { windSpeed?: string; humidity?: string }> =
-    {};
-  items.forEach((item: KMAApiItem) => {
-    switch (item.category) {
-      case "TMP":
-        weather.temp = item.fcstValue;
-        break;
-      case "SKY":
-        weather.sky = item.fcstValue;
-        break;
-      case "PTY":
-        weather.pty = item.fcstValue;
-        break;
-      case "WSD":
-        weather.windSpeed = item.fcstValue;
-        break;
-      case "REH":
-        weather.humidity = item.fcstValue;
-        break;
-    }
-  });
+  const weather: Partial<
+    WeatherData & { windSpeed?: string; humidity?: string }
+  > = {};
+
+  for (const item of items) {
+    if (item.category === "TMP") weather.temp = item.fcstValue;
+    if (item.category === "SKY") weather.sky = item.fcstValue;
+    if (item.category === "PTY") weather.pty = item.fcstValue;
+    if (item.category === "WSD") weather.windSpeed = item.fcstValue;
+    if (item.category === "REH") weather.humidity = item.fcstValue;
+  }
+
   return weather;
 };
 
@@ -53,37 +46,34 @@ const calculateFeelsLikeTemp = (
   temp: number,
   windSpeed: number | undefined
 ): string => {
-  if (windSpeed === undefined) return temp.toFixed(1);
-  const windSpeedKmh = windSpeed * 3.6;
-  if (windSpeedKmh <= 4.8) {
-    return temp.toFixed(1);
-  }
-  const feelsLike =
+  if (!windSpeed) return temp.toFixed(1);
+
+  const windKmh = windSpeed * 3.6;
+  if (windKmh <= 4.8) return temp.toFixed(1);
+
+  const feels =
     13.12 +
     0.6215 * temp -
-    11.37 * Math.pow(windSpeedKmh, 0.16) +
-    0.3965 * temp * Math.pow(windSpeedKmh, 0.16);
-  return feelsLike.toFixed(1);
+    11.37 * Math.pow(windKmh, 0.16) +
+    0.3965 * temp * Math.pow(windKmh, 0.16);
+  return feels.toFixed(1);
 };
 
 const findCurrentForecastItems = (items: KMAApiItem[]): KMAApiItem[] => {
   const now = new Date();
-  const base_date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
+  const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(
     2,
     "0"
   )}${String(now.getDate()).padStart(2, "0")}`;
-  const fcst_time = `${String(now.getHours()).padStart(2, "0")}00`;
+  const time = `${String(now.getHours()).padStart(2, "0")}00`;
 
-  let targetItems = items.filter(
-    (item) => item.fcstDate === base_date && item.fcstTime === fcst_time
+  const exactItems = items.filter(
+    (it) => it.fcstDate === date && it.fcstTime === time
   );
+  if (exactItems.length > 0) return exactItems;
 
-  // 현재 시간에 맞는 예보가 없으면 가장 가까운 시간의 예보를 찾음
-  if (targetItems.length === 0 && items.length > 0) {
-    const closestTime = items[0].fcstTime;
-    targetItems = items.filter((item) => item.fcstTime === closestTime);
-  }
-  return targetItems;
+  const closestTime = items[0]?.fcstTime;
+  return items.filter((it) => it.fcstTime === closestTime);
 };
 
 /**
@@ -100,40 +90,27 @@ export const getWeather = async (
 
   try {
     const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(ERROR_MESSAGES.WEATHER_API_FAILED);
+
     const data = await response.json();
+    const header = data.response?.header;
+    if (header?.resultCode !== "00") return null;
 
-    if (data.response?.header?.resultCode !== "00") {
-      console.error(
-        "API Error:",
-        data.response?.header?.resultMsg || data.error
-      );
-      return null;
-    }
-
-    const allItems: KMAApiItem[] = data.response.body.items.item;
-    const currentItems = findCurrentForecastItems(allItems);
+    const items: KMAApiItem[] = data.response.body.items.item;
+    const currentItems = findCurrentForecastItems(items);
     const weather = parseWeatherItems(currentItems);
 
-    if (Object.keys(weather).length === 0) {
-      console.error("현재 시간과 가까운 날씨 데이터를 가져오지 못했습니다.");
-      return null;
-    }
+    if (!Object.keys(weather).length) return null;
 
-    // 체감온도 계산
     if (weather.temp) {
-      const tempNum = parseFloat(weather.temp);
-      const windSpeedNum = weather.windSpeed
-        ? parseFloat(weather.windSpeed)
-        : undefined;
-      weather.feelsLikeTemp = calculateFeelsLikeTemp(tempNum, windSpeedNum);
+      const temp = Number(weather.temp);
+      const wind = weather.windSpeed ? Number(weather.windSpeed) : undefined;
+      weather.feelsLikeTemp = calculateFeelsLikeTemp(temp, wind);
     }
 
     return weather as WeatherData;
-  } catch (error) {
-    console.error("날씨 데이터를 가져오지 못했습니다:", error);
+  } catch (err) {
+    console.error("날씨 데이터를 가져오지 못했습니다:", err);
     return null;
   }
 };
@@ -145,35 +122,21 @@ export const getWeather = async (
  * @returns {string} 날씨 상태 (e.g., "맑음", "비", "눈")
  */
 export const getWeatherCondition = (pty: string, sky: string): string => {
-  const ptyValue = parseInt(pty, 10);
-  if (ptyValue > 0) {
-    switch (ptyValue) {
-      case 1:
-        return "비";
-      case 2:
-        return "비/눈";
-      case 3:
-        return "눈";
-      case 5:
-        return "빗방울";
-      case 6:
-        return "빗방울/눈날림";
-      case 7:
-        return "눈날림";
-      default:
-        return "알 수 없음";
-    }
+  const p = Number(pty);
+  if (p > 0) {
+    if (p === 1) return "비";
+    if (p === 2) return "비/눈";
+    if (p === 3) return "눈";
+    if (p === 5) return "빗방울";
+    if (p === 6) return "빗방울/눈날림";
+    if (p === 7) return "눈날림";
+    return "알 수 없음";
   }
 
-  const skyValue = parseInt(sky, 10);
-  switch (skyValue) {
-    case 1:
-      return "맑음";
-    case 3:
-      return "구름많음";
-    case 4:
-      return "흐림";
-    default:
-      return "알 수 없음";
-  }
+  const s = Number(sky);
+  if (s === 1) return "맑음";
+  if (s === 3) return "구름많음";
+  if (s === 4) return "흐림";
+
+  return "알 수 없음";
 };
