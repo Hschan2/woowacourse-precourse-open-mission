@@ -6,27 +6,26 @@ export function useLocation() {
   const router = useRouter();
   const locationError = ref<string | null>(null);
 
+  const handleSuccess = (pos: GeolocationPosition) => {
+    router.push({
+      name: "MoodSelect",
+      query: { lat: pos.coords.latitude, lon: pos.coords.longitude },
+    });
+  };
+
+  const handleError = (err: GeolocationPositionError) => {
+    console.error("Location 거절:", err);
+    locationError.value = UI_MESSAGES.LOCATION_PERMISSION_DENIED;
+    alert(locationError.value);
+  };
+
   const requestLocation = () => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        console.log(
-          "위치 권한 허용됨. MoodSelect 페이지로 이동합니다:",
-          pos.coords
-        );
-        router.push({
-          name: "MoodSelect",
-          query: {
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-          },
-        });
-      },
-      (err) => {
-        console.error("위치 권한 거부:", err);
-        locationError.value = UI_MESSAGES.LOCATION_PERMISSION_DENIED;
-        alert(locationError.value);
-      }
-    );
+    if (!navigator.geolocation) {
+      locationError.value = UI_MESSAGES.LOCATION_PERMISSION_DENIED;
+      alert(locationError.value);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(handleSuccess, handleError);
   };
 
   return {
