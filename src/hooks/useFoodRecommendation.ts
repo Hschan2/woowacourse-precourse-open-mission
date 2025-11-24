@@ -12,7 +12,7 @@ export interface Restaurant {
 }
 
 export interface Recommendation {
-  foodName:string;
+  foodName: string;
   reason: string;
   averagePrice: number;
   calories: number;
@@ -32,15 +32,14 @@ export function useFoodRecommendation() {
   const fetchInitialData = async (lat: number, lon: number) => {
     isLoading.value = true;
     try {
-      const [weatherResult, airQualityResult, addressResult] =
-        await Promise.all([
-          getWeather(lat, lon),
-          getAirQualityData(lat, lon),
-          getAddressFromCoords(lat, lon),
-        ]);
-      weatherData.value = weatherResult;
-      airQualityData.value = airQualityResult;
-      locationAddress.value = addressResult;
+      const [w, a, addr] = await Promise.all([
+        getWeather(lat, lon),
+        getAirQualityData(lat, lon),
+        getAddressFromCoords(lat, lon),
+      ]);
+      weatherData.value = w;
+      airQualityData.value = a;
+      locationAddress.value = addr;
     } catch (error) {
       console.error(ERROR_MESSAGES.GET_DATA_FAILED, error);
       alert(ERROR_MESSAGES.DATA_FETCH_FAILED);
