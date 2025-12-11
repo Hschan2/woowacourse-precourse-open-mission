@@ -1,11 +1,24 @@
-<script setup lang="ts"></script>
-
 <template>
-  <router-view />
-  <footer class="fixed bottom-0 inset-x-0 w-full py-2 mobile:py-3 tablet:py-4 text-center text-gray-500 text-[10px] mobile:text-xs bg-white z-10">
-    @copyright 2025 오늘의맛기온. All rights reserved. 기상청/에어코리아/VWOLRD 공공데이터포털 제공
-  </footer>
+  <TopHeader />
+  <main class="pt-[50px] pb-[40px]">
+    <router-view />
+  </main>
+  <Footer />
+  <ErrorModal
+    v-if="isError"
+    :message="errorMessage"
+    @close="hideError"
+  />
 </template>
+
+<script setup lang="ts">
+import TopHeader from "./components/TopHeader.vue";
+import Footer from "./components/Footer.vue";
+import ErrorModal from "./components/ErrorModal.vue";
+import { useError } from "./hooks/useError";
+
+const { isError, errorMessage, hideError } = useError();
+</script>
 
 <style>
 body {
