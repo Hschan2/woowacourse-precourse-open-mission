@@ -1,10 +1,10 @@
-import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { UI_MESSAGES } from "../constants/messages";
+import { useError } from "./useError";
 
 export function useLocation() {
   const router = useRouter();
-  const locationError = ref<string | null>(null);
+  const { showError } = useError();
 
   const handleSuccess = (pos: GeolocationPosition) => {
     router.push({
@@ -15,14 +15,12 @@ export function useLocation() {
 
   const handleError = (err: GeolocationPositionError) => {
     console.error("Location 거절:", err);
-    locationError.value = UI_MESSAGES.LOCATION_PERMISSION_DENIED;
-    alert(locationError.value);
+    showError(UI_MESSAGES.LOCATION_PERMISSION_DENIED);
   };
 
   const requestLocation = () => {
     if (!navigator.geolocation) {
-      locationError.value = UI_MESSAGES.LOCATION_PERMISSION_DENIED;
-      alert(locationError.value);
+      showError(UI_MESSAGES.LOCATION_PERMISSION_DENIED);
       return;
     }
     navigator.geolocation.getCurrentPosition(handleSuccess, handleError);
@@ -30,6 +28,5 @@ export function useLocation() {
 
   return {
     requestLocation,
-    locationError,
   };
 }
