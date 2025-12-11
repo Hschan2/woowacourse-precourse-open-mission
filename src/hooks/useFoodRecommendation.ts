@@ -5,12 +5,13 @@ import { getAddressFromCoords } from "../services/locationAPI";
 import { callFoodRecommendationAPI } from "../services/recommendationAPI";
 import { buildPrompt } from "../utils/prompt";
 import { ERROR_MESSAGES, UI_MESSAGES } from "../constants/messages";
+import type { WeatherData, AirQualityData } from "../types/api";
+import { useError } from "./useError";
 
 export interface Restaurant {
   name: string;
   address: string;
 }
-
 export interface Recommendation {
   foodName: string;
   reason: string;
@@ -20,14 +21,15 @@ export interface Recommendation {
 }
 
 export function useFoodRecommendation() {
-  const weatherData = ref<any>(null);
-  const airQualityData = ref<any>(null);
+  const weatherData = ref<WeatherData | null>(null);
+  const airQualityData = ref<AirQualityData | null>(null);
   const locationAddress = ref<string>("");
   const isLoading = ref(true);
   const isSubmitting = ref(false);
   const recommendationResult = ref<Recommendation | null>(null);
   const selectedMoods = ref<string[]>([]);
   const recommendedFoodHistory = ref<string[]>([]);
+  const { showError } = useError();
 
   const fetchInitialData = async (lat: number, lon: number) => {
     isLoading.value = true;
@@ -42,7 +44,7 @@ export function useFoodRecommendation() {
       locationAddress.value = addr;
     } catch (error) {
       console.error(ERROR_MESSAGES.GET_DATA_FAILED, error);
-      alert(ERROR_MESSAGES.DATA_FETCH_FAILED);
+      showError(ERROR_MESSAGES.DATA_FETCH_FAILED);
     } finally {
       isLoading.value = false;
     }
@@ -50,29 +52,34 @@ export function useFoodRecommendation() {
 
   const getRecommendation = async (isReRecommendation: boolean = false) => {
     if (selectedMoods.value.length === 0) {
-      alert(UI_MESSAGES.SELECT_MOOD_PROMPT);
+      showError(UI_MESSAGES.SELECT_MOOD_PROMPT);
       return;
     }
 
     isSubmitting.value = true;
     recommendationResult.value = null;
 
-    const prompt = buildPrompt({
-      locationAddress: locationAddress.value,
-      weatherData: weatherData.value,
-      airQualityData: airQualityData.value,
-      selectedMoods: selectedMoods.value,
-      isReRecommendation,
-      excludedFoods: recommendedFoodHistory.value,
-    });
+    try {
+      const prompt = buildPrompt({
+        locationAddress: locationAddress.value,
+        weatherData: weatherData.value,
+        airQualityData: airQualityData.value,
+        selectedMoods: selectedMoods.value,
+        isReRecommendation,
+        excludedFoods: recommendedFoodHistory.value,
+      });
 
-    const result = await callFoodRecommendationAPI(prompt);
-    if (result && result.foodName) {
-      recommendedFoodHistory.value.push(result.foodName);
+      const result = await callFoodRecommendationAPI(prompt);
+      if (result && result.foodName) {
+        recommendedFoodHistory.value.push(result.foodName);
+      }
+      recommendationResult.value = result;
+    } catch (err) {
+      console.error(err);
+      showError((err as Error).message);
+    } finally {
+      isSubmitting.value = false;
     }
-    recommendationResult.value = result;
-
-    isSubmitting.value = false;
   };
 
   const toggleMood = (mood: string) => {
