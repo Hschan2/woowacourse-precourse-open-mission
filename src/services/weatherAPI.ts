@@ -1,29 +1,8 @@
 import { ERROR_MESSAGES } from "../constants/messages";
+import type { KMAApiItem, WeatherData } from "../types/api";
 
-interface WeatherData {
-  temp: string;
-  sky: string;
-  pty: string;
-  feelsLikeTemp: string;
-}
-
-interface KMAApiItem {
-  baseDate: string;
-  baseTime: string;
-  category: "TMP" | "SKY" | "PTY" | "REH" | "WSD" | string;
-  fcstDate: string;
-  fcstTime: string;
-  fcstValue: string;
-  nx: number;
-  ny: number;
-}
-
-const parseWeatherItems = (
-  items: KMAApiItem[]
-): Partial<WeatherData & { windSpeed?: string; humidity?: string }> => {
-  const weather: Partial<
-    WeatherData & { windSpeed?: string; humidity?: string }
-  > = {};
+const parseWeatherItems = (items: KMAApiItem[]): Partial<WeatherData> => {
+  const weather: Partial<WeatherData> = {};
 
   for (const item of items) {
     if (item.category === "TMP") weather.temp = item.fcstValue;
