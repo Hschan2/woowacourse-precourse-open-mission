@@ -1,26 +1,8 @@
 <template>
-  <div class="relative min-h-screen pb-16 bg-white flex flex-col">
+  <div class="relative min-h-[calc(100vh-112px)] bg-white flex flex-col">
     <div
-      class="absolute top-0 left-0 right-0 p-4 mobile:p-6 flex justify-between items-center z-30"
+      class="pt-8 flex flex-col items-center justify-center w-full flex-grow"
     >
-      <router-link
-        to="/"
-        class="text-lg mobile:text-xl font-bold text-neutral-800 cursor-pointer"
-      >
-        {{ UI_MESSAGES.APP_TITLE }}
-      </router-link>
-      <button
-        @click="openLottoGame"
-        class="px-3 mobile:px-4 tablet:px-5 py-1.5 mobile:py-2 tablet:py-2.5 bg-[#777] text-white text-xs mobile:text-sm tablet:text-base rounded-lg hover:bg-[#666] transition cursor-pointer"
-      >
-        {{ UI_MESSAGES.MINI_GAME }}
-      </button>
-    </div>
-
-    <div
-      class="pt-[5rem] flex flex-col items-center justify-center w-full flex-grow"
-    >
-      <!-- flex-grow added -->
       <div v-if="isSubmitting" class="flex flex-col items-center text-center">
         <img
           src="/mat.svg"
@@ -110,7 +92,7 @@
 
       <div v-else class="flex flex-col items-center w-full">
         <h1
-          class="text-xl mobile:text-2xl font-bold mt-12 mb-8 mobile:mt-16 mobile:mb-10"
+          class="text-xl mobile:text-2xl font-bold mt-4 mb-8 mobile:mt-6 mobile:mb-10"
         >
           {{ UI_MESSAGES.MOOD_QUESTION }}
         </h1>
@@ -153,30 +135,20 @@
         </div>
       </div>
     </div>
-    <LottoGame v-if="showLottoGame" @close="closeLottoGame" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useFoodRecommendation } from "../hooks/useFoodRecommendation";
+import { useError } from "../hooks/useError";
 import { moods } from "../constants/moods";
 import { ERROR_MESSAGES, UI_MESSAGES } from "../constants/messages";
-import LottoGame from "../components/LottoGame.vue";
 
 const route = useRoute();
 const router = useRouter();
-
-const showLottoGame = ref(false);
-
-const openLottoGame = () => {
-  showLottoGame.value = true;
-};
-
-const closeLottoGame = () => {
-  showLottoGame.value = false;
-};
+const { showError } = useError();
 
 const {
   weatherData,
@@ -196,7 +168,7 @@ onMounted(() => {
   const lon = parseFloat(route.query.lon as string);
 
   if (!lat || !lon) {
-    alert(ERROR_MESSAGES.NO_LOCATION_INFO);
+    showError(ERROR_MESSAGES.NO_LOCATION_INFO);
     router.push("/");
     return;
   }
