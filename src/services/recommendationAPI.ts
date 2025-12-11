@@ -7,28 +7,24 @@ export const callFoodRecommendationAPI = async (
 ): Promise<Recommendation | null> => {
   const url = `${API_BASE_URL}${RECOMMEND_FOOD_API_PATH}`;
 
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt }),
-    });
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prompt }),
+  });
 
-    if (!response.ok) {
-      throw new Error(ERROR_MESSAGES.AI_REQUEST_FAILED());
-    }
-
-    const data = await response.json();
-    if (data.error) {
-      throw new Error(data.error);
-    }
-
-    return data;
-  } catch (err) {
-    console.error("AI 서버 요청 실패:", err);
-    alert(ERROR_MESSAGES.AI_REQUEST_FAILED(err));
-    return null;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData?.error || ERROR_MESSAGES.AI_REQUEST_FAILED();
+    throw new Error(errorMessage);
   }
+
+  const data = await response.json();
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data;
 };
