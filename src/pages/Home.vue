@@ -1,40 +1,16 @@
 <template>
-  <div class="grid grid-cols-1 grid-rows-1 min-h-screen pb-16 bg-white">
-    <div class="col-start-1 row-start-1 pt-4 pl-4 mobile:pt-6 mobile:pl-6 place-self-start-start">
-      <router-link
-        to="/"
-        class="text-lg mobile:text-xl font-bold text-neutral-800 cursor-pointer"
-      >
-        {{ UI_MESSAGES.APP_TITLE }}
-      </router-link>
-    </div>
-
-    <div
-      class="col-start-1 row-start-1 pt-4 pr-4 mobile:pt-6 mobile:pr-6 align-self-start justify-self-end"
+  <div class="flex flex-col items-center justify-center min-h-[calc(100vh-112px)]">
+    <img :src="logo" :alt="UI_MESSAGES.LOGO_ALT" class="h-24 mobile:h-28 tablet:h-32 mx-auto" />
+    <button
+      @click="handleStartClick"
+      class="mt-8 mobile:mt-10 px-6 py-1.5 mobile:px-8 mobile:py-2 bg-blue-600 text-white font-bold rounded-full text-base mobile:text-lg hover:bg-blue-700 transition cursor-pointer"
     >
-      <button
-        @click="openLottoGame"
-        class="px-3 mobile:px-4 tablet:px-5 py-1.5 mobile:py-2 tablet:py-2.5 bg-[#777] text-white text-xs mobile:text-sm tablet:text-base rounded-lg hover:bg-[#666] transition cursor-pointer"
-      >
-        {{ UI_MESSAGES.MINI_GAME }}
-      </button>
-    </div>
+      {{ UI_MESSAGES.START }}
+    </button>
 
-    <div
-      class="col-start-1 row-start-1 place-self-center flex flex-col items-center mt-[-2rem] mobile:mt-[-3rem] tablet:mt-[-4rem]"
-    >
-      <img :src="logo" :alt="UI_MESSAGES.LOGO_ALT" class="h-24 mobile:h-28 tablet:h-32 mx-auto" />
-      <button
-        @click="handleStartClick"
-        class="mt-8 mobile:mt-10 px-6 py-1.5 mobile:px-8 mobile:py-2 bg-blue-600 text-white font-bold rounded-full text-base mobile:text-lg hover:bg-blue-700 transition cursor-pointer"
-      >
-        {{ UI_MESSAGES.START }}
-      </button>
-    </div>
-
-    <div v-if="showPermissionModal" class="col-start-1 row-start-1 z-10">
+    <div v-if="showPermissionModal" class="fixed inset-0 bg-black bg-opacity-50 z-40">
       <div
-        class="absolute top-4 mobile:top-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[360px] rounded-xl p-4 mobile:p-6 shadow-lg bg-white text-center border border-gray-300"
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-[360px] rounded-xl p-4 mobile:p-6 shadow-lg bg-white text-center border border-gray-300"
       >
         <p class="text-gray-800 text-sm mb-4 mobile:mb-6">
           {{ UI_MESSAGES.REQUEST_LOCATION_PERMISSION }}
@@ -55,7 +31,6 @@
         </div>
       </div>
     </div>
-    <LottoGame v-if="showLottoGame" @close="closeLottoGame" />
   </div>
 </template>
 
@@ -64,10 +39,8 @@ import { ref } from "vue";
 import { UI_MESSAGES } from "../constants/messages";
 import { useLocation } from "../hooks/useLocation";
 import logo from "../assets/logo.png";
-import LottoGame from "../components/LottoGame.vue";
 
 const showPermissionModal = ref(false);
-const showLottoGame = ref(false);
 const { requestLocation } = useLocation();
 
 const handleStartClick = () => {
@@ -83,13 +56,5 @@ const handleStartClick = () => {
 const handleAllowClick = () => {
   showPermissionModal.value = false;
   requestLocation();
-};
-
-const openLottoGame = () => {
-  showLottoGame.value = true;
-};
-
-const closeLottoGame = () => {
-  showLottoGame.value = false;
 };
 </script>
