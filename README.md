@@ -193,3 +193,6 @@ cd server
 .\venv\Scripts\activate
 uvicorn main:app --reload
 ```
+
+### 미션 결과 (2025.12.29)
+![미션결과](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdna%2FdvMibX%2FdJMcagjPTXl%2FAAAAAAAAAAAAAAAAAAAAAGuerGYAcpenJ5XzX1BlpaAYK0Z_fQrXQzP8CQogs90Q%2Fimg.png%3Fcredential%3DyqXZFxpELC7KVnFOS48ylbz2pIh7yKj8%26expires%3D1769871599%26allow_ip%3D%26allow_referer%3D%26signature%3Dz0CO%252F3PNu05%252Fw7JftHlcuOG4fuk%253D)
