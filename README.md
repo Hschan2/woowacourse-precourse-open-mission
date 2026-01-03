@@ -38,8 +38,6 @@
 예) “소통은 하루 15분 화상회의만 가능”, “코드 작성은 깃허브 이슈/PR로만”
 ```
 
-![Project Status](https://img.shields.io/badge/Status-In%00Progress-blue)
-
 ## 프로젝트 명: 오늘의 맛기온
 ### 💡기획 의도
 * **문제점**: 많은 사람들이 음식을 주문할 때 겪는 가장 큰 어려움은 `음식 선택에 대한 많은 피로`입니다. 배달 앱에서 음식을 찾는 시간을 많이 소요하고 있습니다.
@@ -193,6 +191,26 @@ cd server
 .\venv\Scripts\activate
 uvicorn main:app --reload
 ```
+
+### 실행 결과 (실행 화면)
+***AI 음식 추천 기능***
+[AI 음식 추천](https://tv.kakao.com/v/459383483)
+   
+
+***같은 기분으로 새로운 음식 추천***
+[같은 기분으로 새로운 음식 추천](https://tv.kakao.com/v/459383526)
+   
+
+***새로운 기분으로 다시 음식 추천***
+[새로운 기분으로 다시 음식 추천](https://tv.kakao.com/v/459383520)
+   
+
+***로또 미니게임***
+[로또 미니게임](https://tv.kakao.com/v/459383534)
+   
+   
+***로또 미니게임 에러***
+[로또 미니게임 에러](https://tv.kakao.com/v/459383545)
 
 ### 미션 결과 (2025.12.29)
 ![미션결과](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdna%2FdvMibX%2FdJMcagjPTXl%2FAAAAAAAAAAAAAAAAAAAAAGuerGYAcpenJ5XzX1BlpaAYK0Z_fQrXQzP8CQogs90Q%2Fimg.png%3Fcredential%3DyqXZFxpELC7KVnFOS48ylbz2pIh7yKj8%26expires%3D1769871599%26allow_ip%3D%26allow_referer%3D%26signature%3Dz0CO%252F3PNu05%252Fw7JftHlcuOG4fuk%253D)
